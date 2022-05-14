@@ -28,7 +28,7 @@ pub async fn login(id: Identity, pool: web::Data<DbPool>, data: web::Form<FormDa
 }
 
 #[get("/logout")]
-async fn logout(id: Identity) -> HttpResponse {
+pub async fn logout(id: Identity) -> HttpResponse {
     // remove identity
     id.forget();
     HttpResponse::Ok().finish()
