@@ -3,6 +3,7 @@ use crate::models::{NewPost, Post};
 use crate::{DbPool, schema};
 use crate::models;
 use crate::SqliteConnection;
+use comrak::{ComrakOptions, markdown_to_html};
 use diesel::prelude::*;
 use serde_json::{to_string, to_vec};
 use argon2::{
@@ -25,12 +26,22 @@ pub fn create_new_post(
         tags_str.push_str(tag);
         tags_str.push(',');
     }
+    let mut options = ComrakOptions::default();
+    options.extension.autolink = true;
+    options.extension.strikethrough = true;
+    options.extension.superscript = true;
+    options.extension.table = true;
+    options.extension.footnotes = true;
+    options.extension.header_ids = Some("header-".to_string());
+    options.extension.tasklist = true;
+    options.extension.description_lists = true;
+    let rendered_content = markdown_to_html(&post.content, &options);
     tags_str.pop();
-    let new_post = models::Post {
+    let new_post = Post {
         slug: post.slug.to_string(),
         title: post.title.to_string(),
         content: post.content.to_string(),
-        rendered_content: None,
+        rendered_content: Some(rendered_content),
         published: post.published,
         created_at: None,
         updated_at: None,
