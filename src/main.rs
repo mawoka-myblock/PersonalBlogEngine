@@ -11,11 +11,10 @@ extern crate chrono;
 extern crate diesel;
 extern crate dotenv;
 
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder, middleware, services};
+use actix_web::{web, App, HttpServer};
 use diesel::prelude::*;
 use diesel::r2d2::{self, ConnectionManager};
-use actix_session::{Session, SessionMiddleware, storage::RedisActorSessionStore};
-use actix_identity::{Identity, CookieIdentityPolicy, IdentityService};
+use actix_identity::{CookieIdentityPolicy, IdentityService};
 
 type DbPool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
 

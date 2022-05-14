@@ -1,11 +1,9 @@
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use crate::models::{NewPost, Post};
-use crate::{DbPool, schema};
+use crate::{schema};
 use crate::models;
 use crate::SqliteConnection;
 use comrak::{ComrakOptions, markdown_to_html};
 use diesel::prelude::*;
-use serde_json::{to_string, to_vec};
 use argon2::{
     password_hash::{
         rand_core::OsRng,
@@ -15,6 +13,19 @@ use argon2::{
 };
 
 type DbError = Box<dyn std::error::Error + Send + Sync>;
+
+fn get_markdown_options() -> ComrakOptions {
+    let mut options = ComrakOptions::default();
+    options.extension.autolink = true;
+    options.extension.strikethrough = true;
+    options.extension.superscript = true;
+    options.extension.table = true;
+    options.extension.footnotes = true;
+    options.extension.header_ids = Some("header-".to_string());
+    options.extension.tasklist = true;
+    options.extension.description_lists = true;
+    return options;
+}
 
 pub fn create_new_post(
     post: &NewPost,
@@ -26,16 +37,8 @@ pub fn create_new_post(
         tags_str.push_str(tag);
         tags_str.push(',');
     }
-    let mut options = ComrakOptions::default();
-    options.extension.autolink = true;
-    options.extension.strikethrough = true;
-    options.extension.superscript = true;
-    options.extension.table = true;
-    options.extension.footnotes = true;
-    options.extension.header_ids = Some("header-".to_string());
-    options.extension.tasklist = true;
-    options.extension.description_lists = true;
-    let rendered_content = markdown_to_html(&post.content, &options);
+
+    let rendered_content = markdown_to_html(&post.content, &get_markdown_options());
     tags_str.pop();
     let new_post = Post {
         slug: post.slug.to_string(),
@@ -58,7 +61,7 @@ pub fn delete_post(slug_input: &str, conn: &SqliteConnection) -> Result<usize, D
 }
 
 pub fn check_user(email_input: &str, password_input: &str, conn: &SqliteConnection) -> Result<Option<models::User>, DbError> {
-    use schema::users::dsl::{users, email, password};
+    use schema::users::dsl::{users, email};
     let argon2 = Argon2::default();
     let salt = SaltString::generate(&mut OsRng);
     let user = users.filter(
@@ -100,4 +103,38 @@ pub fn setup(input_email: &str, input_password: &str, conn: &SqliteConnection) -
     };
     diesel::insert_into(users).values(&new_user).execute(conn)?;
     Ok(())
+}
+
+pub fn get_raw_markdown(slug_input: &str, conn: &SqliteConnection) -> Result<Option<String>, DbError> {
+    use schema::posts::dsl::{posts, slug};
+    let post_obj = posts.filter(
+        slug.like(slug_input)
+    ).first::<models::Post>(conn);
+
+
+    return match post_obj {
+        Ok(post) => Ok(Some(post.content)),
+        Err(_) => Ok(None),
+    };
+}
+
+pub fn get_rendered_markdown(slug_input: &str, conn: &SqliteConnection) -> Result<Option<String>, DbError> {
+    use schema::posts::dsl::{posts, slug};
+    let post = posts.filter(slug.like(slug_input)).first::<models::Post>(conn);
+    return match post {
+        Ok(post) => Ok(Some(post.rendered_content.unwrap())),
+        Err(_) => Ok(None),
+    };
+
+
+    /*    return if post.len() == 0 {
+            Ok(post) => Ok(Some(match post[0].rendered_content {
+                Some(rendered_content) => rendered_content,
+                None => {
+                    let rendered_content = markdown_to_html(&post.content, &get_markdown_options());
+                    rendered_content
+                }
+            })),
+            Err(_) => Ok(None),
+        };*/
 }

@@ -1,9 +1,8 @@
 use actix_identity::Identity;
-use actix_web::{delete, get, Error, HttpResponse, post, web};
+use actix_web::{get, Error, HttpResponse, post, web};
 use serde::{Deserialize, Serialize};
 
 use crate::{actions, DbPool};
-use crate::models::{NewPost};
 
 #[derive(Deserialize)]
 struct FormData {
