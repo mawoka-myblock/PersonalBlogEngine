@@ -23,7 +23,7 @@ fn get_markdown_options() -> ComrakOptions {
     options.extension.header_ids = Some("header-".to_string());
     options.extension.tasklist = true;
     options.extension.description_lists = true;
-    return options;
+    options
 }
 
 pub fn create_new_post(
@@ -39,11 +39,11 @@ pub fn create_new_post(
         content: post.content.to_string(),
         rendered_content: Some(rendered_content),
         published: post.published,
-        created_at: None,
-        updated_at: None,
+        created_at: chrono::Utc::now().naive_utc(),
+        updated_at: chrono::Utc::now().naive_utc(),
         tags: post.tags.clone(),
     };
-    diesel::insert_into(table).values(&new_post).get_result(conn)?;
+    diesel::insert_into(table).values(&new_post).execute(conn)?;
     Ok(new_post)
 }
 
@@ -55,8 +55,8 @@ pub fn delete_post(slug_input: &str, conn: &PgConnection) -> Result<usize, DbErr
 
 pub fn check_user(email_input: &str, password_input: &str, conn: &PgConnection) -> Result<Option<models::User>, DbError> {
     use schema::users::dsl::{users, email};
-    let argon2 = Argon2::default();
-    let salt = SaltString::generate(&mut OsRng);
+    // let argon2 = Argon2::default();
+    // let salt = SaltString::generate(&mut OsRng);
     let user = users.filter(
         email.like(email_input)
     ).first::<models::User>(conn);
@@ -105,19 +105,19 @@ pub fn get_raw_markdown(slug_input: &str, conn: &PgConnection) -> Result<Option<
     ).first::<models::Post>(conn);
 
 
-    return match post_obj {
+    match post_obj {
         Ok(post) => Ok(Some(post.content)),
         Err(_) => Ok(None),
-    };
+    }
 }
 
 pub fn get_rendered_markdown(slug_input: &str, conn: &PgConnection) -> Result<Option<String>, DbError> {
     use schema::posts::dsl::{posts, slug};
     let post = posts.filter(slug.like(slug_input)).first::<models::Post>(conn);
-    return match post {
+    match post {
         Ok(post) => Ok(Some(post.rendered_content.unwrap())),
         Err(_) => Ok(None),
-    };
+    }
 
 
     /*    return if post.len() == 0 {
@@ -132,7 +132,7 @@ pub fn get_rendered_markdown(slug_input: &str, conn: &PgConnection) -> Result<Op
         };*/
 }
 
-pub fn update_post(slug_input: &str, content_input: &str, title_input: &str, published: &bool, tags: &Vec<String>, conn: &PgConnection) -> Result<models::Post, DbError> {
+pub fn update_post(slug_input: &str, content_input: &str, title_input: &str, published: &bool, tags: &[String], conn: &PgConnection) -> Result<models::Post, DbError> {
     use schema::posts::dsl::{posts};
     use schema::posts::table;
     let post = posts.find(slug_input).get_result::<Post>(conn)?;
@@ -142,10 +142,10 @@ pub fn update_post(slug_input: &str, content_input: &str, title_input: &str, pub
         title: title_input.to_string(),
         content: content_input.to_string(),
         rendered_content: Some(rendered_content),
-        published: published.clone(),
-        created_at: None,
-        updated_at: None,
-        tags: tags.clone(),
+        published: *published,
+        created_at: post.created_at,
+        updated_at: chrono::Utc::now().naive_utc(),
+        tags: tags.to_vec(),
     };
     // diesel::update(posts.find(slug_input)).set(&new_post).execute(&conn)?;
 /*    diesel::update(posts.find(slug_input))

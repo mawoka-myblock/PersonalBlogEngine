@@ -7,7 +7,7 @@ table! {
         published -> Bool,
         created_at -> Timestamp,
         updated_at -> Timestamp,
-        tags -> Nullable<Array<Text>>,
+        tags -> Array<Text>,
     }
 }
 

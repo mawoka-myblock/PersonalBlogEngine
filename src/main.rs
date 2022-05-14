@@ -28,8 +28,8 @@ async fn main() -> std::io::Result<()> {
     /*    let pool = r2d2::Pool::builder()
             .build(manager)
             .expect("Failed to create pool.");*/
-    let private_key = actix_web::cookie::Key::generate();
-    let redis_uri = std::env::var("REDIS_URL").expect("REDIS_URL");
+    // let private_key = actix_web::cookie::Key::generate();
+    // let redis_uri = std::env::var("REDIS_URL").expect("REDIS_URL");
     let pool = db::get_pool();
     HttpServer::new(move || {
         let policy = CookieIdentityPolicy::new(&[0; 32])

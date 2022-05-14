@@ -5,9 +5,9 @@ use serde::{Deserialize, Serialize};
 use crate::{actions, DbPool};
 
 #[derive(Deserialize)]
-struct FormData {
-    email: String,
-    password: String,
+pub struct FormData {
+    pub email: String,
+    pub password: String,
 }
 
 #[post("/login")]
