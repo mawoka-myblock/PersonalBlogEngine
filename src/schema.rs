@@ -8,6 +8,7 @@ table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         tags -> Array<Text>,
+        intro -> Text,
     }
 }
 

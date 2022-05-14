@@ -15,6 +15,7 @@ pub struct Post {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub tags: Vec<String>,
+    pub intro: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -24,6 +25,7 @@ pub struct NewPost {
     pub content: String,
     pub published: bool,
     pub tags: Vec<String>,
+    pub intro: String,
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, Serialize, Deserialize)]
@@ -32,4 +34,14 @@ pub struct NewPost {
 pub struct User {
     pub email: String,
     pub password: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ListPosts {
+    pub slug: String,
+    pub title: String,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+    pub tags: Vec<String>,
+    pub intro: String,
 }

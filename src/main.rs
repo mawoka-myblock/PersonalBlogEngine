@@ -52,11 +52,17 @@ async fn main() -> std::io::Result<()> {
                             .service(routes::manage::create_post) // POST create_post
                             .service(routes::manage::delete_post)// DELETE post?slug=slug
                             .service(routes::manage::setup) // POST setup
+                            .service(routes::manage::update_post) // PUT update
                     )
                     .service(web::scope("/account")
                                  .service(routes::account::login) // POST login
                                  .service(routes::account::logout) // POST logout
                                  .service(routes::account::check_login_status) // GET check
+                    )
+                    .service(web::scope("/public")
+                        .service(routes::public::get_rendered_markdown) // GET rendered?slug=slug
+                        .service(routes::public::get_raw_markdown) // GET raw?slug=slug
+                        .service(routes::public::get_posts) // GET post
                     )
             )
     })

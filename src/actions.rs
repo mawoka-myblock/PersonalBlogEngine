@@ -42,6 +42,7 @@ pub fn create_new_post(
         created_at: chrono::Utc::now().naive_utc(),
         updated_at: chrono::Utc::now().naive_utc(),
         tags: post.tags.clone(),
+        intro: post.intro.clone(),
     };
     diesel::insert_into(table).values(&new_post).execute(conn)?;
     Ok(new_post)
@@ -132,26 +133,62 @@ pub fn get_rendered_markdown(slug_input: &str, conn: &PgConnection) -> Result<Op
         };*/
 }
 
-pub fn update_post(slug_input: &str, content_input: &str, title_input: &str, published: &bool, tags: &[String], conn: &PgConnection) -> Result<models::Post, DbError> {
+pub fn update_post(slug_input: &str, content_input: &Option<String>, title_input: &Option<String>, published: &Option<bool>, tags: &Option<Vec<String>>, intro: &Option<String>, conn: &PgConnection) -> Result<models::Post, DbError> {
     use schema::posts::dsl::{posts};
     use schema::posts::table;
     let post = posts.find(slug_input).get_result::<Post>(conn)?;
-    let rendered_content = markdown_to_html(&post.content, &get_markdown_options());
+
     let new_post = models::Post {
         slug: slug_input.to_string(),
-        title: title_input.to_string(),
-        content: content_input.to_string(),
-        rendered_content: Some(rendered_content),
-        published: *published,
+        title: match title_input {
+            Some(title) => title.to_string(),
+            None => post.title,
+        },
+        content: match content_input {
+            Some(content) => content.to_string(),
+            None => post.content,
+        },
+        rendered_content: match content_input {
+            Some(content) => Some(markdown_to_html(content, &get_markdown_options())),
+            None => Some(post.rendered_content.unwrap()),
+        },
+        published: match published {
+            Some(published) => *published,
+            None => post.published,
+        },
         created_at: post.created_at,
         updated_at: chrono::Utc::now().naive_utc(),
-        tags: tags.to_vec(),
+        tags: match tags {
+            Some(tags) => tags.to_vec(),
+            None => post.tags,
+        },
+        intro: match intro {
+            Some(intro) => intro.to_string(),
+            None => post.intro,
+        },
     };
     // diesel::update(posts.find(slug_input)).set(&new_post).execute(&conn)?;
-/*    diesel::update(posts.find(slug_input))
-        .set(&new_post)
-        .get_result::<Post>(&conn)?;*/
+    /*    diesel::update(posts.find(slug_input))
+            .set(&new_post)
+            .get_result::<Post>(&conn)?;*/
     diesel::update(table).set(&new_post).execute(conn)?;
 
     Ok(new_post)
+}
+
+pub fn get_all_posts(cursor: &i64, conn: &PgConnection) -> Result<Vec<models::ListPosts>, DbError> {
+    use schema::posts::dsl::{posts, created_at};
+    let res = posts.order_by(created_at.desc()).limit(10).offset(*cursor).load::<Post>(conn)?;
+    let mut posts_return = Vec::new();
+    for post in res {
+        posts_return.push(models::ListPosts {
+            slug: post.slug,
+            title: post.title,
+            created_at: post.created_at,
+            updated_at: post.updated_at,
+            tags: post.tags,
+            intro: post.intro,
+        });
+    }
+    Ok(posts_return)
 }

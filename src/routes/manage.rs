@@ -1,4 +1,4 @@
-use actix_web::{delete, Error, HttpResponse, post, web};
+use actix_web::{delete, put, Error, HttpResponse, post, web};
 use serde::Deserialize;
 
 use crate::{DbPool};
@@ -52,7 +52,7 @@ pub async fn setup(pool: web::Data<DbPool>, data: web::Json<SetupData>) -> Resul
         .map_err(actix_web::error::ErrorConflict)?;
     // Check if setup is already completed
     if user_count != 0 {
-        return Ok(HttpResponse::Ok().finish());
+        return Ok(HttpResponse::BadRequest().body("Setup already completed"));
     }
     web::block(move || {
         actions::setup(&data.email, &data.password, &conn2)
@@ -61,3 +61,25 @@ pub async fn setup(pool: web::Data<DbPool>, data: web::Json<SetupData>) -> Resul
         .map_err(actix_web::error::ErrorConflict)?;
     Ok(HttpResponse::Ok().finish())
 }
+
+#[derive(Deserialize)]
+pub struct UpdatePost {
+    pub slug: String,
+    pub title: Option<String>,
+    pub content: Option<String>,
+    pub published: Option<bool>,
+    pub tags: Option<Vec<String>>,
+    pub intro: Option<String>,
+}
+
+#[put("/update")]
+pub async fn update_post(pool: web::Data<DbPool>, data: web::Json<UpdatePost>) -> Result<HttpResponse, Error> {
+    let user = web::block(move || {
+        let conn = pool.get()?;
+        actions::update_post(&data.slug, &data.content, &data.title, &data.published, &data.tags, &data.intro, &conn)
+    })
+        .await?
+        .map_err(actix_web::error::ErrorConflict)?;
+    Ok(HttpResponse::Ok().json(user))
+}
+
