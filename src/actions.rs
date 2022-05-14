@@ -1,7 +1,6 @@
 use crate::models::{NewPost, Post};
 use crate::{schema};
 use crate::models;
-use crate::SqliteConnection;
 use comrak::{ComrakOptions, markdown_to_html};
 use diesel::prelude::*;
 use argon2::{
@@ -29,17 +28,11 @@ fn get_markdown_options() -> ComrakOptions {
 
 pub fn create_new_post(
     post: &NewPost,
-    conn: &SqliteConnection,
+    conn: &PgConnection,
 ) -> Result<models::Post, DbError> {
-    use schema::posts::dsl::posts;
-    let mut tags_str: String = "".to_string();
-    for tag in post.tags.iter() {
-        tags_str.push_str(tag);
-        tags_str.push(',');
-    }
+    use schema::posts::table;
 
     let rendered_content = markdown_to_html(&post.content, &get_markdown_options());
-    tags_str.pop();
     let new_post = Post {
         slug: post.slug.to_string(),
         title: post.title.to_string(),
@@ -48,19 +41,19 @@ pub fn create_new_post(
         published: post.published,
         created_at: None,
         updated_at: None,
-        tags: tags_str,
+        tags: post.tags.clone(),
     };
-    diesel::insert_into(posts).values(&new_post).execute(conn)?;
+    diesel::insert_into(table).values(&new_post).get_result(conn)?;
     Ok(new_post)
 }
 
-pub fn delete_post(slug_input: &str, conn: &SqliteConnection) -> Result<usize, DbError> {
+pub fn delete_post(slug_input: &str, conn: &PgConnection) -> Result<usize, DbError> {
     use schema::posts::dsl::{posts, slug};
     let num_deleted = diesel::delete(posts.filter(slug.like(slug_input))).execute(conn)?;
     Ok(num_deleted)
 }
 
-pub fn check_user(email_input: &str, password_input: &str, conn: &SqliteConnection) -> Result<Option<models::User>, DbError> {
+pub fn check_user(email_input: &str, password_input: &str, conn: &PgConnection) -> Result<Option<models::User>, DbError> {
     use schema::users::dsl::{users, email};
     let argon2 = Argon2::default();
     let salt = SaltString::generate(&mut OsRng);
@@ -80,19 +73,19 @@ pub fn check_user(email_input: &str, password_input: &str, conn: &SqliteConnecti
     }
 }
 
-pub fn count_users(conn: &SqliteConnection) -> Result<usize, DbError> {
+pub fn count_users(conn: &PgConnection) -> Result<usize, DbError> {
     use schema::users::dsl::users;
     let count = users.count().get_result::<i64>(conn)?;
     Ok(count as usize)
 }
 
-pub fn count_posts(conn: &SqliteConnection) -> Result<usize, DbError> {
+pub fn count_posts(conn: &PgConnection) -> Result<usize, DbError> {
     use schema::posts::dsl::posts;
     let count = posts.count().get_result::<i64>(conn)?;
     Ok(count as usize)
 }
 
-pub fn setup(input_email: &str, input_password: &str, conn: &SqliteConnection) -> Result<(), DbError> {
+pub fn setup(input_email: &str, input_password: &str, conn: &PgConnection) -> Result<(), DbError> {
     use schema::users::dsl::{users};
     let argon2 = Argon2::default();
     let salt = SaltString::generate(&mut OsRng);
@@ -105,7 +98,7 @@ pub fn setup(input_email: &str, input_password: &str, conn: &SqliteConnection) -
     Ok(())
 }
 
-pub fn get_raw_markdown(slug_input: &str, conn: &SqliteConnection) -> Result<Option<String>, DbError> {
+pub fn get_raw_markdown(slug_input: &str, conn: &PgConnection) -> Result<Option<String>, DbError> {
     use schema::posts::dsl::{posts, slug};
     let post_obj = posts.filter(
         slug.like(slug_input)
@@ -118,7 +111,7 @@ pub fn get_raw_markdown(slug_input: &str, conn: &SqliteConnection) -> Result<Opt
     };
 }
 
-pub fn get_rendered_markdown(slug_input: &str, conn: &SqliteConnection) -> Result<Option<String>, DbError> {
+pub fn get_rendered_markdown(slug_input: &str, conn: &PgConnection) -> Result<Option<String>, DbError> {
     use schema::posts::dsl::{posts, slug};
     let post = posts.filter(slug.like(slug_input)).first::<models::Post>(conn);
     return match post {
@@ -137,4 +130,28 @@ pub fn get_rendered_markdown(slug_input: &str, conn: &SqliteConnection) -> Resul
             })),
             Err(_) => Ok(None),
         };*/
+}
+
+pub fn update_post(slug_input: &str, content_input: &str, title_input: &str, published: &bool, tags: &Vec<String>, conn: &PgConnection) -> Result<models::Post, DbError> {
+    use schema::posts::dsl::{posts};
+    use schema::posts::table;
+    let post = posts.find(slug_input).get_result::<Post>(conn)?;
+    let rendered_content = markdown_to_html(&post.content, &get_markdown_options());
+    let new_post = models::Post {
+        slug: slug_input.to_string(),
+        title: title_input.to_string(),
+        content: content_input.to_string(),
+        rendered_content: Some(rendered_content),
+        published: published.clone(),
+        created_at: None,
+        updated_at: None,
+        tags: tags.clone(),
+    };
+    // diesel::update(posts.find(slug_input)).set(&new_post).execute(&conn)?;
+/*    diesel::update(posts.find(slug_input))
+        .set(&new_post)
+        .get_result::<Post>(&conn)?;*/
+    diesel::update(table).set(&new_post).execute(conn)?;
+
+    Ok(new_post)
 }

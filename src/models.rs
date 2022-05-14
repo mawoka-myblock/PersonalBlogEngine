@@ -2,8 +2,10 @@ use super::schema::*;
 use serde::{Deserialize, Serialize};
 use super::chrono;
 
-#[derive(Debug, Clone, Queryable, Insertable, Serialize, Deserialize)]
+// #[derive(Debug, Clone, Queryable, Insertable, Serialize, Deserialize)]
+#[derive(Debug, Clone, Queryable, Serialize, Deserialize, Insertable, AsChangeset)]
 #[table_name = "posts"]
+// #[primary_key(slug)]
 pub struct Post {
     pub slug: String,
     pub title: String,
@@ -12,7 +14,7 @@ pub struct Post {
     pub published: bool,
     pub created_at: Option<chrono::NaiveDateTime>,
     pub updated_at: Option<chrono::NaiveDateTime>,
-    pub tags: String,
+    pub tags: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,6 +28,7 @@ pub struct NewPost {
 
 #[derive(Debug, Clone, Queryable, Insertable, Serialize, Deserialize)]
 #[table_name = "users"]
+// #[primary_key(email)]
 pub struct User {
     pub email: String,
     pub password: String,

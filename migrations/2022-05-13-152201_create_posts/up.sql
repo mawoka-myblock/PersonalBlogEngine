@@ -6,7 +6,7 @@ CREATE TABLE posts
     content          TEXT    NOT NULL,
     rendered_content TEXT,
     published        BOOLEAN NOT NULL DEFAULT false,
-    created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    tags             VARCHAR(300)
-)
+    created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    tags             text[]
+);

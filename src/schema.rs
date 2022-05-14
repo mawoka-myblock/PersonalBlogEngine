@@ -1,20 +1,20 @@
 table! {
     posts (slug) {
-        slug -> Nullable<Text>,
-        title -> Text,
+        slug -> Varchar,
+        title -> Varchar,
         content -> Text,
         rendered_content -> Nullable<Text>,
         published -> Bool,
         created_at -> Timestamp,
         updated_at -> Timestamp,
-        tags -> Nullable<Text>,
+        tags -> Nullable<Array<Text>>,
     }
 }
 
 table! {
     users (email) {
-        email -> Text,
-        password -> Text,
+        email -> Varchar,
+        password -> Varchar,
     }
 }
 
