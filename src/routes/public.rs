@@ -1,5 +1,6 @@
 use actix_web::{get, Error, HttpResponse, web};
 use serde::{Deserialize};
+use crate::search::search;
 
 use crate::{actions, DbPool};
 
@@ -37,6 +38,7 @@ pub async fn get_rendered_markdown(pool: web::Data<DbPool>, query: web::Query<Qu
         None => Err(actix_web::error::ErrorNotFound("Post not found")),
     }
 }
+
 #[derive(Deserialize)]
 pub struct GetPostsQuery {
     pub offset: i64,
@@ -51,4 +53,32 @@ pub async fn get_posts(pool: web::Data<DbPool>, query: web::Query<GetPostsQuery>
         .await?
         .map_err(actix_web::error::ErrorInternalServerError)?;
     Ok(HttpResponse::Ok().json(posts))
+}
+
+#[get("/tags/{tag}")]
+pub async fn get_posts_with_tag(pool: web::Data<DbPool>, query: web::Path<String>, offset: web::Query<GetPostsQuery>) -> Result<HttpResponse, Error> {
+    let posts = web::block(move || {
+        let conn = pool.get()?;
+        actions::get_posts_with_specific_tag(&query.into_inner(), &offset.offset, &conn)
+    })
+        .await?
+        .map_err(actix_web::error::ErrorInternalServerError)?;
+    Ok(HttpResponse::Ok().json(posts))
+}
+
+#[derive(Deserialize)]
+pub struct SearchQuery {
+    pub query: String,
+}
+
+#[get("/search")]
+pub async fn search_posts(pool: web::Data<DbPool>, query: web::Query<SearchQuery>) -> Result<HttpResponse, Error> {
+    let res = web::block(move || {
+        let conn = pool.get()?;
+        search(&query.query, &conn)
+    })
+        .await?
+        .map_err(actix_web::error::ErrorInternalServerError)?;
+    println!("{:?}", res);
+    Ok(HttpResponse::Ok().finish())
 }

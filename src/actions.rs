@@ -11,7 +11,7 @@ use argon2::{
     Argon2,
 };
 
-type DbError = Box<dyn std::error::Error + Send + Sync>;
+pub type DbError = Box<dyn std::error::Error + Send + Sync>;
 
 fn get_markdown_options() -> ComrakOptions {
     let mut options = ComrakOptions::default();
@@ -24,6 +24,21 @@ fn get_markdown_options() -> ComrakOptions {
     options.extension.tasklist = true;
     options.extension.description_lists = true;
     options
+}
+
+fn posts_to_listposts(posts: Vec<Post>) -> Vec<models::ListPosts> {
+    let mut listposts = Vec::new();
+    for post in posts {
+        listposts.push(models::ListPosts {
+            slug: post.slug,
+            title: post.title,
+            created_at: post.created_at,
+            updated_at: post.updated_at,
+            tags: post.tags,
+            intro: post.intro,
+        });
+    }
+    listposts
 }
 
 pub fn create_new_post(
@@ -179,16 +194,13 @@ pub fn update_post(slug_input: &str, content_input: &Option<String>, title_input
 pub fn get_all_posts(cursor: &i64, conn: &PgConnection) -> Result<Vec<models::ListPosts>, DbError> {
     use schema::posts::dsl::{posts, created_at};
     let res = posts.order_by(created_at.desc()).limit(10).offset(*cursor).load::<Post>(conn)?;
-    let mut posts_return = Vec::new();
-    for post in res {
-        posts_return.push(models::ListPosts {
-            slug: post.slug,
-            title: post.title,
-            created_at: post.created_at,
-            updated_at: post.updated_at,
-            tags: post.tags,
-            intro: post.intro,
-        });
-    }
-    Ok(posts_return)
+    Ok(posts_to_listposts(res))
+}
+
+pub fn get_posts_with_specific_tag(tag: &str, offset: &i64, conn: &PgConnection) -> Result<Vec<models::ListPosts>, DbError> {
+    use schema::posts::dsl::{posts, created_at, tags};
+    let res = posts.filter(
+        tags.contains(vec![tag.to_string()])
+    ).order_by(created_at.desc()).limit(10).offset(*offset).load::<Post>(conn)?;
+    Ok(posts_to_listposts(res))
 }

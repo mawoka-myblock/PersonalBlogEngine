@@ -3,6 +3,7 @@ pub mod models;
 pub mod routes;
 pub mod db;
 pub mod actions;
+pub mod search;
 
 extern crate chrono;
 
@@ -62,7 +63,9 @@ async fn main() -> std::io::Result<()> {
                     .service(web::scope("/public")
                         .service(routes::public::get_rendered_markdown) // GET rendered?slug=slug
                         .service(routes::public::get_raw_markdown) // GET raw?slug=slug
-                        .service(routes::public::get_posts) // GET post
+                        .service(routes::public::get_posts) // GET post?offset=0
+                        .service(routes::public::get_posts_with_tag) // GET post/{tag}?offset=0
+                        .service(routes::public::search_posts) // GET search?q=query
                     )
             )
     })
