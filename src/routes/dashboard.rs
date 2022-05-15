@@ -1,7 +1,6 @@
-use actix_web::{HttpResponse, web, Responder};
+use actix_web::{web, HttpResponse, Responder};
 use mime_guess::from_path;
 use rust_embed::RustEmbed;
-
 
 #[derive(RustEmbed)]
 #[folder = "$CARGO_MANIFEST_DIR/frontend/dist/"]

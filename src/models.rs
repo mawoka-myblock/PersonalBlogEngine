@@ -1,6 +1,6 @@
+use super::chrono;
 use super::schema::*;
 use serde::{Deserialize, Serialize};
-use super::chrono;
 
 // #[derive(Debug, Clone, Queryable, Insertable, Serialize, Deserialize)]
 #[derive(Debug, Clone, Queryable, Serialize, Deserialize, Insertable, AsChangeset)]

@@ -1,15 +1,12 @@
-use crate::models::{NewPost, Post};
-use crate::{schema};
 use crate::models;
-use comrak::{ComrakOptions, markdown_to_html};
-use diesel::prelude::*;
+use crate::models::{NewPost, Post};
+use crate::schema;
 use argon2::{
-    password_hash::{
-        rand_core::OsRng,
-        PasswordHash, PasswordHasher, PasswordVerifier, SaltString,
-    },
+    password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Argon2,
 };
+use comrak::{markdown_to_html, ComrakOptions};
+use diesel::prelude::*;
 
 pub type DbError = Box<dyn std::error::Error + Send + Sync>;
 
@@ -42,10 +39,7 @@ fn posts_to_listposts(posts: Vec<Post>) -> Vec<models::ListPosts> {
     listposts
 }
 
-pub fn create_new_post(
-    post: &NewPost,
-    conn: &PgConnection,
-) -> Result<models::Post, DbError> {
+pub fn create_new_post(post: &NewPost, conn: &PgConnection) -> Result<models::Post, DbError> {
     use schema::posts::table;
 
     let rendered_content = markdown_to_html(&post.content, &get_markdown_options());
@@ -70,13 +64,17 @@ pub fn delete_post(slug_input: &str, conn: &PgConnection) -> Result<usize, DbErr
     Ok(num_deleted)
 }
 
-pub fn check_user(email_input: &str, password_input: &str, conn: &PgConnection) -> Result<Option<models::User>, DbError> {
-    use schema::users::dsl::{users, email};
+pub fn check_user(
+    email_input: &str,
+    password_input: &str,
+    conn: &PgConnection,
+) -> Result<Option<models::User>, DbError> {
+    use schema::users::dsl::{email, users};
     // let argon2 = Argon2::default();
     // let salt = SaltString::generate(&mut OsRng);
-    let user = users.filter(
-        email.like(email_input)
-    ).first::<models::User>(conn);
+    let user = users
+        .filter(email.like(email_input))
+        .first::<models::User>(conn);
 
     match user {
         Ok(user) => {
@@ -103,7 +101,7 @@ pub fn count_posts(conn: &PgConnection) -> Result<usize, DbError> {
 }
 
 pub fn setup(input_email: &str, input_password: &str, conn: &PgConnection) -> Result<(), DbError> {
-    use schema::users::dsl::{users};
+    use schema::users::dsl::users;
     let argon2 = Argon2::default();
     let salt = SaltString::generate(&mut OsRng);
     let password_hash = argon2.hash_password(input_password.as_bytes(), &salt)?;
@@ -117,10 +115,9 @@ pub fn setup(input_email: &str, input_password: &str, conn: &PgConnection) -> Re
 
 pub fn get_raw_markdown(slug_input: &str, conn: &PgConnection) -> Result<Option<String>, DbError> {
     use schema::posts::dsl::{posts, slug};
-    let post_obj = posts.filter(
-        slug.like(slug_input)
-    ).first::<models::Post>(conn);
-
+    let post_obj = posts
+        .filter(slug.like(slug_input))
+        .first::<models::Post>(conn);
 
     match post_obj {
         Ok(post) => Ok(Some(post.content)),
@@ -128,29 +125,41 @@ pub fn get_raw_markdown(slug_input: &str, conn: &PgConnection) -> Result<Option<
     }
 }
 
-pub fn get_rendered_markdown(slug_input: &str, conn: &PgConnection) -> Result<Option<String>, DbError> {
+pub fn get_rendered_markdown(
+    slug_input: &str,
+    conn: &PgConnection,
+) -> Result<Option<String>, DbError> {
     use schema::posts::dsl::{posts, slug};
-    let post = posts.filter(slug.like(slug_input)).first::<models::Post>(conn);
+    let post = posts
+        .filter(slug.like(slug_input))
+        .first::<models::Post>(conn);
     match post {
         Ok(post) => Ok(Some(post.rendered_content.unwrap())),
         Err(_) => Ok(None),
     }
 
-
     /*    return if post.len() == 0 {
-            Ok(post) => Ok(Some(match post[0].rendered_content {
-                Some(rendered_content) => rendered_content,
-                None => {
-                    let rendered_content = markdown_to_html(&post.content, &get_markdown_options());
-                    rendered_content
-                }
-            })),
-            Err(_) => Ok(None),
-        };*/
+        Ok(post) => Ok(Some(match post[0].rendered_content {
+            Some(rendered_content) => rendered_content,
+            None => {
+                let rendered_content = markdown_to_html(&post.content, &get_markdown_options());
+                rendered_content
+            }
+        })),
+        Err(_) => Ok(None),
+    };*/
 }
 
-pub fn update_post(slug_input: &str, content_input: &Option<String>, title_input: &Option<String>, published: &Option<bool>, tags: &Option<Vec<String>>, intro: &Option<String>, conn: &PgConnection) -> Result<models::Post, DbError> {
-    use schema::posts::dsl::{posts};
+pub fn update_post(
+    slug_input: &str,
+    content_input: &Option<String>,
+    title_input: &Option<String>,
+    published: &Option<bool>,
+    tags: &Option<Vec<String>>,
+    intro: &Option<String>,
+    conn: &PgConnection,
+) -> Result<models::Post, DbError> {
+    use schema::posts::dsl::posts;
     let post = posts.find(slug_input).get_result::<Post>(conn)?;
 
     let new_post = models::Post {
@@ -184,8 +193,8 @@ pub fn update_post(slug_input: &str, content_input: &Option<String>, title_input
     };
     // diesel::update(posts.find(slug_input)).set(&new_post).execute(&conn)?;
     /*    diesel::update(posts.find(slug_input))
-            .set(&new_post)
-            .get_result::<Post>(&conn)?;*/
+    .set(&new_post)
+    .get_result::<Post>(&conn)?;*/
     let target = posts.find(slug_input);
     diesel::update(target).set(&new_post).execute(conn)?;
     //     use diesel::debug_query;
@@ -194,26 +203,46 @@ pub fn update_post(slug_input: &str, content_input: &Option<String>, title_input
     Ok(new_post)
 }
 
-pub fn get_all_posts(cursor: &i64, public: bool, conn: &PgConnection) -> Result<Vec<models::ListPosts>, DbError> {
-    use schema::posts::dsl::{posts, created_at, published};
+pub fn get_all_posts(
+    cursor: &i64,
+    public: bool,
+    conn: &PgConnection,
+) -> Result<Vec<models::ListPosts>, DbError> {
+    use schema::posts::dsl::{created_at, posts, published};
     let res = if public {
-        posts.filter(published.eq_all(true)).order_by(created_at.desc()).limit(10).offset(*cursor).load::<Post>(conn)?
+        posts
+            .filter(published.eq_all(true))
+            .order_by(created_at.desc())
+            .limit(10)
+            .offset(*cursor)
+            .load::<Post>(conn)?
     } else {
-        posts.order_by(created_at.desc()).limit(10).offset(*cursor).load::<Post>(conn)?
+        posts
+            .order_by(created_at.desc())
+            .limit(10)
+            .offset(*cursor)
+            .load::<Post>(conn)?
     };
     Ok(posts_to_listposts(res))
 }
 
-pub fn get_posts_with_specific_tag(tag: &str, offset: &i64, conn: &PgConnection) -> Result<Vec<models::ListPosts>, DbError> {
-    use schema::posts::dsl::{posts, created_at, tags};
-    let res = posts.filter(
-        tags.contains(vec![tag.to_string()])
-    ).order_by(created_at.desc()).limit(10).offset(*offset).load::<Post>(conn)?;
+pub fn get_posts_with_specific_tag(
+    tag: &str,
+    offset: &i64,
+    conn: &PgConnection,
+) -> Result<Vec<models::ListPosts>, DbError> {
+    use schema::posts::dsl::{created_at, posts, tags};
+    let res = posts
+        .filter(tags.contains(vec![tag.to_string()]))
+        .order_by(created_at.desc())
+        .limit(10)
+        .offset(*offset)
+        .load::<Post>(conn)?;
     Ok(posts_to_listposts(res))
 }
 
 pub fn get_single_post(slug: &str, conn: &PgConnection) -> Result<models::Post, DbError> {
-    use schema::posts::dsl::{posts};
+    use schema::posts::dsl::posts;
     let res = posts.find(slug).get_result::<Post>(conn)?;
     Ok(res)
 }

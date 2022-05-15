@@ -1,5 +1,5 @@
 use actix_identity::Identity;
-use actix_web::{get, Error, HttpResponse, post, web};
+use actix_web::{get, post, web, Error, HttpResponse};
 use serde::{Deserialize, Serialize};
 
 use crate::{actions, DbPool};
@@ -11,13 +11,17 @@ pub struct FormData {
 }
 
 #[post("/login")]
-pub async fn login(id: Identity, pool: web::Data<DbPool>, data: web::Json<FormData>) -> Result<HttpResponse, Error> {
+pub async fn login(
+    id: Identity,
+    pool: web::Data<DbPool>,
+    data: web::Json<FormData>,
+) -> Result<HttpResponse, Error> {
     let user = web::block(move || {
         let conn = pool.get()?;
         actions::check_user(&data.email, &data.password, &conn)
     })
-        .await?
-        .map_err(actix_web::error::ErrorInternalServerError)?;
+    .await?
+    .map_err(actix_web::error::ErrorInternalServerError)?;
     match user {
         Some(user) => {
             id.remember(user.email);
@@ -46,7 +50,7 @@ pub async fn check_login_status(id: Identity) -> Result<HttpResponse, Error> {
             is_logged_in: true,
             user: Some(id),
         };
-        Ok(HttpResponse::Ok().json( resp ))
+        Ok(HttpResponse::Ok().json(resp))
     } else {
         let resp = CheckResponse {
             is_logged_in: false,
