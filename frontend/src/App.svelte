@@ -42,6 +42,10 @@
             {/await}
         {:else}
             <!-- Show Setup-screen -->
+            <h1 class="text-center text-2xl">Setup</h1>
+            {#await import("./lib/components/SetupScreen.svelte") then c}
+                <svelte:component this={c.default}/>
+            {/await}
         {/if}
 
     {/if}
