@@ -2,6 +2,7 @@
 
 A headless CMS for simple 1-person blogs.
 
+![](https://img.shields.io/endpoint?url=https://time.mawoka.eu.org/api/compat/shields/v1/Mawoka/interval:any/project:PersonalBlogEngine&label=Time%20spent%20on%20PBE&style=for-the-badge)
 ## Idea
 
 I want a headless CMS for my blog, so I've used Strapi.
