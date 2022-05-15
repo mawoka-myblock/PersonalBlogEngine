@@ -10,14 +10,18 @@ extern crate chrono;
 #[macro_use]
 extern crate diesel;
 extern crate dotenv;
+#[macro_use]
+extern crate diesel_migrations;
 
 use actix_identity::{CookieIdentityPolicy, IdentityService};
 use actix_web::{web, App, HttpServer};
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
+use diesel_migrations::{embed_migrations};
 
 pub type DbPool = Pool<ConnectionManager<PgConnection>>;
 
+embed_migrations!();
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv::dotenv().ok();
@@ -31,6 +35,10 @@ async fn main() -> std::io::Result<()> {
     // let private_key = actix_web::cookie::Key::generate();
     // let redis_uri = std::env::var("REDIS_URL").expect("REDIS_URL");
     let pool = db::get_pool();
+
+    let conn = pool.get().unwrap();
+    embedded_migrations::run(&conn).unwrap();
+
     HttpServer::new(move || {
         let policy = CookieIdentityPolicy::new(&[0; 32])
             .name("auth-cookie")

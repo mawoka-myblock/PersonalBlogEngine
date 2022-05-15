@@ -9,7 +9,7 @@ COPY frontend/ .
 RUN pnpm run build
 
 
-FROM rust:1.43 as builder
+FROM rust:latest as builder
 
 RUN USER=root cargo new --bin PersonalBlogEngine
 WORKDIR /PersonalBlogEngine
@@ -21,7 +21,7 @@ ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
 RUN cargo build --release
 RUN rm src/*.rs
 
-ADD . ./
+COPY . ./
 RUN rm ./target/release/deps/PersonalBlogEngine*
 RUN cargo build --release
 
