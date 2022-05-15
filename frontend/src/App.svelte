@@ -1,65 +1,48 @@
 <script lang="ts">
-  import logo from './assets/svelte.png'
-  import Counter from './lib/Counter.svelte'
+    import {loggedIn, setupCompleted} from "./lib/stores";
+    import Spinner from "./lib/components/Spinner.svelte"
+
+    let checkingIfLoggedIn = true
+    const checkIfLoggedIn = async () => {
+        const res = await fetch("/api/v1/account/check")
+        if (res.status === 200) {
+            loggedIn.set(true)
+            setupCompleted.set(true)
+        } else {
+            loggedIn.set(false)
+            const res2 = await fetch("/api/v1/manage/setup")
+            if (res2.status === 200) {
+                setupCompleted.set(true)
+            } else {
+                setupCompleted.set(false)
+            }
+        }
+        checkingIfLoggedIn = false
+    }
+    checkIfLoggedIn()
 </script>
 
-<main>
-  <img src={logo} alt="Svelte Logo" />
-  <h1>Hello Typescript!</h1>
+{#if checkingIfLoggedIn}
+    <Spinner/>
 
-  <Counter />
+{:else}
+    {#if $loggedIn}
+        <!-- Show Main-Menu -->
+        {#await import("./lib/components/MainScreen.svelte") then c}
+                <svelte:component this={c.default}/>
 
-  <p>
-    Visit <a href="https://svelte.dev">svelte.dev</a> to learn how to build Svelte
-    apps.
-  </p>
+            {/await}
 
-  <p>
-    Check out <a href="https://github.com/sveltejs/kit#readme">SvelteKit</a> for
-    the officially supported framework, also powered by Vite!
-  </p>
-</main>
+    {:else}
+        {#if $setupCompleted}
+            <!-- Show Login-screen -->
+            {#await import("./lib/components/Login.svelte") then c}
+                <svelte:component this={c.default}/>
 
-<style>
-  :root {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-      Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  }
+            {/await}
+        {:else}
+            <!-- Show Setup-screen -->
+        {/if}
 
-  main {
-    text-align: center;
-    padding: 1em;
-    margin: 0 auto;
-  }
-
-  img {
-    height: 16rem;
-    width: 16rem;
-  }
-
-  h1 {
-    color: #ff3e00;
-    text-transform: uppercase;
-    font-size: 4rem;
-    font-weight: 100;
-    line-height: 1.1;
-    margin: 2rem auto;
-    max-width: 14rem;
-  }
-
-  p {
-    max-width: 14rem;
-    margin: 1rem auto;
-    line-height: 1.35;
-  }
-
-  @media (min-width: 480px) {
-    h1 {
-      max-width: none;
-    }
-
-    p {
-      max-width: none;
-    }
-  }
-</style>
+    {/if}
+{/if}

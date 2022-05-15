@@ -1,12 +1,10 @@
-use actix_web::{get, Error, HttpResponse, web, Responder};
-use serde::{Deserialize};
-use crate::search::search;
+use actix_web::{HttpResponse, web, Responder};
 use mime_guess::from_path;
+use rust_embed::RustEmbed;
 
-use crate::{actions, DbPool};
 
 #[derive(RustEmbed)]
-#[folder = "$CARGO_MANIFEST_DIR/public/"]
+#[folder = "$CARGO_MANIFEST_DIR/frontend/dist/"]
 struct Asset;
 
 fn handle_embedded_file(path: &str) -> HttpResponse {
@@ -19,11 +17,11 @@ fn handle_embedded_file(path: &str) -> HttpResponse {
 }
 
 #[actix_web::get("/")]
-async fn index() -> impl Responder {
+pub async fn index() -> impl Responder {
     handle_embedded_file("index.html")
 }
 
-#[actix_web::get("/dist/{_:.*}")]
-async fn dist(path: web::Path<String>) -> impl Responder {
+#[actix_web::get("/{_:.*}")]
+pub async fn dist(path: web::Path<String>) -> impl Responder {
     handle_embedded_file(path.as_str())
 }

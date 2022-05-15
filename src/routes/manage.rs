@@ -1,4 +1,4 @@
-use actix_web::{delete, put, Error, HttpResponse, post, web};
+use actix_web::{delete, put, get, Error, HttpResponse, post, web};
 use serde::Deserialize;
 
 use crate::{DbPool};
@@ -33,6 +33,18 @@ pub async fn delete_post(pool: web::Data<DbPool>, query: web::Query<QueryDelete>
     Ok(HttpResponse::Ok().finish())
 }
 
+#[get("/post")]
+pub async fn get_post(pool: web::Data<DbPool>, query: web::Query<QueryDelete>) -> Result<HttpResponse, Error> {
+    let slug = query.slug.to_string();
+    let post = web::block(move || {
+        let conn = pool.get()?;
+        actions::get_single_post(&slug, &conn)
+    })
+        .await?
+        .map_err(actix_web::error::ErrorNotFound)?;
+    Ok(HttpResponse::Ok().json(post))
+}
+
 #[derive(Deserialize, Debug)]
 pub struct SetupData {
     pub email: String,
@@ -62,6 +74,20 @@ pub async fn setup(pool: web::Data<DbPool>, data: web::Json<SetupData>) -> Resul
     Ok(HttpResponse::Ok().finish())
 }
 
+#[get("/setup")]
+pub async fn check_setup(pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
+    let conn = pool.get().map_err(actix_web::error::ErrorInternalServerError)?;
+    let user_count = web::block(move || {
+        actions::count_users(&conn)
+    })
+        .await?
+        .map_err(actix_web::error::ErrorConflict)?;
+    if user_count == 0 {
+        return Ok(HttpResponse::BadRequest().body("Setup not completed"));
+    }
+    Ok(HttpResponse::Ok().body("Setup already completed"))
+}
+
 #[derive(Deserialize)]
 pub struct UpdatePost {
     pub slug: String,
@@ -83,3 +109,18 @@ pub async fn update_post(pool: web::Data<DbPool>, data: web::Json<UpdatePost>) -
     Ok(HttpResponse::Ok().json(user))
 }
 
+#[derive(Deserialize)]
+pub struct GetPostsQuery {
+    pub offset: i64,
+}
+
+#[get("/posts")]
+pub async fn get_posts(pool: web::Data<DbPool>, query: web::Query<GetPostsQuery>) -> Result<HttpResponse, Error> {
+    let posts = web::block(move || {
+        let conn = pool.get()?;
+        actions::get_all_posts(&query.offset, false, &conn)
+    })
+        .await?
+        .map_err(actix_web::error::ErrorInternalServerError)?;
+    Ok(HttpResponse::Ok().json(posts))
+}

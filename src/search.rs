@@ -10,6 +10,8 @@ use crate::models;
 use crate::schema::posts::dsl::{posts, created_at};
 use serde::{Serialize, Deserialize};
 use crate::actions::DbError;
+use markdown_to_text;
+use crate::schema::posts::published;
 
 extern crate milli;
 
@@ -46,18 +48,18 @@ pub fn search(term: &str, conn: &PgConnection) -> Result<Vec<DocumentId>, DbErro
             .unwrap();
     let mut writer = Cursor::new(Vec::new());
     let mut index_builder = DocumentBatchBuilder::new(&mut writer).unwrap();
-    let res = posts.order_by(created_at.desc()).limit(100).offset(0).load::<models::Post>(conn).unwrap();
+    let res = posts.filter(published.eq_all(true)).order_by(created_at.desc()).limit(100).offset(0).load::<models::Post>(conn).unwrap();
     for post in res {
         let doc = MeiliInsert {
             id: post.slug,
             intro: post.intro,
-            body: match clean_html(&post.rendered_content.unwrap()) {
-                Ok(x) => x,
-                Err(e) => e.to_string(),
-            },
+            // body: match clean_html(&post.rendered_content.unwrap()) {
+            //     Ok(x) => x,
+            //     Err(e) => e.to_string(),
+            // },
+            body: markdown_to_text::convert(&post.content)
         };
         let json = serde_json::to_string(&doc).unwrap();
-        println!("{}", &json);
         index_builder.extend_from_json(&mut json.as_bytes()).unwrap();
     }
 
@@ -78,6 +80,5 @@ pub fn search(term: &str, conn: &PgConnection) -> Result<Vec<DocumentId>, DbErro
     search.limit(10);
 
     let result = search.execute().unwrap();
-    println!("{:?}", result.documents_ids);
     Ok(result.documents_ids)
 }

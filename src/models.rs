@@ -44,4 +44,5 @@ pub struct ListPosts {
     pub updated_at: chrono::NaiveDateTime,
     pub tags: Vec<String>,
     pub intro: String,
+    pub published: bool,
 }

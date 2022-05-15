@@ -54,6 +54,9 @@ async fn main() -> std::io::Result<()> {
                             .service(routes::manage::delete_post)// DELETE post?slug=slug
                             .service(routes::manage::setup) // POST setup
                             .service(routes::manage::update_post) // PUT update
+                            .service(routes::manage::check_setup) // GET setup
+                            .service(routes::manage::get_posts) // GET posts
+                            .service(routes::manage::get_post) // GET post?slug=slug
                     )
                     .service(web::scope("/account")
                                  .service(routes::account::login) // POST login
@@ -61,13 +64,16 @@ async fn main() -> std::io::Result<()> {
                                  .service(routes::account::check_login_status) // GET check
                     )
                     .service(web::scope("/public")
-                        .service(routes::public::get_rendered_markdown) // GET rendered?slug=slug
-                        .service(routes::public::get_raw_markdown) // GET raw?slug=slug
-                        .service(routes::public::get_posts) // GET post?offset=0
-                        .service(routes::public::get_posts_with_tag) // GET post/{tag}?offset=0
-                        .service(routes::public::search_posts) // GET search?q=query
+                                 .service(routes::public::get_rendered_markdown) // GET rendered?slug=slug
+                                 .service(routes::public::get_raw_markdown) // GET raw?slug=slug
+                                 .service(routes::public::get_posts) // GET post?offset=0
+                                 .service(routes::public::get_posts_with_tag) // GET post/{tag}?offset=0
+                                 .service(routes::public::search_posts) // GET search?q=query
                     )
             )
+            .service(web::scope("/admin")
+                .service(routes::dashboard::index)
+                .service(routes::dashboard::dist))
     })
         .bind(("127.0.0.1", 8080))?
         .run()

@@ -11,7 +11,7 @@ pub struct FormData {
 }
 
 #[post("/login")]
-pub async fn login(id: Identity, pool: web::Data<DbPool>, data: web::Form<FormData>) -> Result<HttpResponse, Error> {
+pub async fn login(id: Identity, pool: web::Data<DbPool>, data: web::Json<FormData>) -> Result<HttpResponse, Error> {
     let user = web::block(move || {
         let conn = pool.get()?;
         actions::check_user(&data.email, &data.password, &conn)

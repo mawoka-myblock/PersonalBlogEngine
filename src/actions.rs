@@ -36,6 +36,7 @@ fn posts_to_listposts(posts: Vec<Post>) -> Vec<models::ListPosts> {
             updated_at: post.updated_at,
             tags: post.tags,
             intro: post.intro,
+            published: post.published,
         });
     }
     listposts
@@ -150,7 +151,6 @@ pub fn get_rendered_markdown(slug_input: &str, conn: &PgConnection) -> Result<Op
 
 pub fn update_post(slug_input: &str, content_input: &Option<String>, title_input: &Option<String>, published: &Option<bool>, tags: &Option<Vec<String>>, intro: &Option<String>, conn: &PgConnection) -> Result<models::Post, DbError> {
     use schema::posts::dsl::{posts};
-    use schema::posts::table;
     let post = posts.find(slug_input).get_result::<Post>(conn)?;
 
     let new_post = models::Post {
@@ -186,14 +186,21 @@ pub fn update_post(slug_input: &str, content_input: &Option<String>, title_input
     /*    diesel::update(posts.find(slug_input))
             .set(&new_post)
             .get_result::<Post>(&conn)?;*/
-    diesel::update(table).set(&new_post).execute(conn)?;
+    let target = posts.find(slug_input);
+    diesel::update(target).set(&new_post).execute(conn)?;
+    //     use diesel::debug_query;
+    // println!("{:?}", debug_query(&diesel::update(target).set(&new_post)));
 
     Ok(new_post)
 }
 
-pub fn get_all_posts(cursor: &i64, conn: &PgConnection) -> Result<Vec<models::ListPosts>, DbError> {
-    use schema::posts::dsl::{posts, created_at};
-    let res = posts.order_by(created_at.desc()).limit(10).offset(*cursor).load::<Post>(conn)?;
+pub fn get_all_posts(cursor: &i64, public: bool, conn: &PgConnection) -> Result<Vec<models::ListPosts>, DbError> {
+    use schema::posts::dsl::{posts, created_at, published};
+    let res = if public {
+        posts.filter(published.eq_all(true)).order_by(created_at.desc()).limit(10).offset(*cursor).load::<Post>(conn)?
+    } else {
+        posts.order_by(created_at.desc()).limit(10).offset(*cursor).load::<Post>(conn)?
+    };
     Ok(posts_to_listposts(res))
 }
 
@@ -203,4 +210,10 @@ pub fn get_posts_with_specific_tag(tag: &str, offset: &i64, conn: &PgConnection)
         tags.contains(vec![tag.to_string()])
     ).order_by(created_at.desc()).limit(10).offset(*offset).load::<Post>(conn)?;
     Ok(posts_to_listposts(res))
+}
+
+pub fn get_single_post(slug: &str, conn: &PgConnection) -> Result<models::Post, DbError> {
+    use schema::posts::dsl::{posts};
+    let res = posts.find(slug).get_result::<Post>(conn)?;
+    Ok(res)
 }

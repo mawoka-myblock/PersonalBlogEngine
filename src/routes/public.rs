@@ -48,7 +48,7 @@ pub struct GetPostsQuery {
 pub async fn get_posts(pool: web::Data<DbPool>, query: web::Query<GetPostsQuery>) -> Result<HttpResponse, Error> {
     let posts = web::block(move || {
         let conn = pool.get()?;
-        actions::get_all_posts(&query.offset, &conn)
+        actions::get_all_posts(&query.offset, true, &conn)
     })
         .await?
         .map_err(actix_web::error::ErrorInternalServerError)?;
