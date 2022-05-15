@@ -1,12 +1,16 @@
 use actix_web::{delete, put, get, Error, HttpResponse, post, web};
 use serde::Deserialize;
+use actix_identity::Identity;
 
 use crate::{DbPool};
 use crate::actions;
 use crate::models::{NewPost};
 
 #[post("/create_post")]
-pub async fn create_post(pool: web::Data<DbPool>, data: web::Json<NewPost>) -> Result<HttpResponse, Error> {
+pub async fn create_post(pool: web::Data<DbPool>, data: web::Json<NewPost>, id: Identity) -> Result<HttpResponse, Error> {
+    if id.identity().is_none() {
+        return Ok(HttpResponse::Unauthorized().finish());
+    };
     let user = web::block(move || {
         let conn = pool.get()?;
         actions::create_new_post(&data, &conn)
@@ -22,7 +26,10 @@ pub struct QueryDelete {
 }
 
 #[delete("/post")]
-pub async fn delete_post(pool: web::Data<DbPool>, query: web::Query<QueryDelete>) -> Result<HttpResponse, Error> {
+pub async fn delete_post(pool: web::Data<DbPool>, query: web::Query<QueryDelete>, id: Identity) -> Result<HttpResponse, Error> {
+    if id.identity().is_none() {
+        return Ok(HttpResponse::Unauthorized().finish());
+    };
     let slug = query.slug.to_string();
     web::block(move || {
         let conn = pool.get()?;
@@ -34,7 +41,10 @@ pub async fn delete_post(pool: web::Data<DbPool>, query: web::Query<QueryDelete>
 }
 
 #[get("/post")]
-pub async fn get_post(pool: web::Data<DbPool>, query: web::Query<QueryDelete>) -> Result<HttpResponse, Error> {
+pub async fn get_post(pool: web::Data<DbPool>, query: web::Query<QueryDelete>, id: Identity) -> Result<HttpResponse, Error> {
+    if id.identity().is_none() {
+        return Ok(HttpResponse::Unauthorized().finish());
+    };
     let slug = query.slug.to_string();
     let post = web::block(move || {
         let conn = pool.get()?;
@@ -99,7 +109,10 @@ pub struct UpdatePost {
 }
 
 #[put("/update")]
-pub async fn update_post(pool: web::Data<DbPool>, data: web::Json<UpdatePost>) -> Result<HttpResponse, Error> {
+pub async fn update_post(pool: web::Data<DbPool>, data: web::Json<UpdatePost>, id: Identity) -> Result<HttpResponse, Error> {
+    if id.identity().is_none() {
+        return Ok(HttpResponse::Unauthorized().finish());
+    };
     let user = web::block(move || {
         let conn = pool.get()?;
         actions::update_post(&data.slug, &data.content, &data.title, &data.published, &data.tags, &data.intro, &conn)
@@ -115,7 +128,10 @@ pub struct GetPostsQuery {
 }
 
 #[get("/posts")]
-pub async fn get_posts(pool: web::Data<DbPool>, query: web::Query<GetPostsQuery>) -> Result<HttpResponse, Error> {
+pub async fn get_posts(pool: web::Data<DbPool>, query: web::Query<GetPostsQuery>, id: Identity) -> Result<HttpResponse, Error> {
+    if id.identity().is_none() {
+        return Ok(HttpResponse::Unauthorized().finish());
+    };
     let posts = web::block(move || {
         let conn = pool.get()?;
         actions::get_all_posts(&query.offset, false, &conn)

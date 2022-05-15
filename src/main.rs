@@ -50,18 +50,18 @@ async fn main() -> std::io::Result<()> {
                 web::scope("/api/v1")
                     .service(
                         web::scope("/manage")
-                            .service(routes::manage::create_post) // POST create_post
-                            .service(routes::manage::delete_post)// DELETE post?slug=slug
+                            .service(routes::manage::create_post) // POST create_post AUTH
+                            .service(routes::manage::delete_post)// DELETE post?slug=slug AUTH
                             .service(routes::manage::setup) // POST setup
-                            .service(routes::manage::update_post) // PUT update
+                            .service(routes::manage::update_post) // PUT update AUTH
                             .service(routes::manage::check_setup) // GET setup
-                            .service(routes::manage::get_posts) // GET posts
-                            .service(routes::manage::get_post) // GET post?slug=slug
+                            .service(routes::manage::get_posts) // GET posts AUTH
+                            .service(routes::manage::get_post) // GET post?slug=slug AUTH
                     )
                     .service(web::scope("/account")
                                  .service(routes::account::login) // POST login
-                                 .service(routes::account::logout) // POST logout
-                                 .service(routes::account::check_login_status) // GET check
+                                 .service(routes::account::logout) // POST logout AUTH
+                                 .service(routes::account::check_login_status) // GET check AUTH
                     )
                     .service(web::scope("/public")
                                  .service(routes::public::get_rendered_markdown) // GET rendered?slug=slug
