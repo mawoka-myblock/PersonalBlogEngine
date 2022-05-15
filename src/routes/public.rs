@@ -79,6 +79,5 @@ pub async fn search_posts(pool: web::Data<DbPool>, query: web::Query<SearchQuery
     })
         .await?
         .map_err(actix_web::error::ErrorInternalServerError)?;
-    println!("{:?}", res);
-    Ok(HttpResponse::Ok().finish())
+    Ok(HttpResponse::Ok().json(res))
 }
