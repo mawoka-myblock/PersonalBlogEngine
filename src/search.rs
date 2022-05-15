@@ -74,10 +74,8 @@ pub fn search(term: &str, conn: &PgConnection) -> Result<Vec<DocumentId>, DbErro
     let rtxn = index.read_txn().unwrap();
     let mut search = Search::new(&rtxn, &index);
     let docs_count = index.number_of_documents(&rtxn).unwrap();
-    println!("{}", docs_count);
-    search.query("*");
+    search.query(term);
     search.limit(10);
-    println!("{:?}", search);
 
     let result = search.execute().unwrap();
     println!("{:?}", result.documents_ids);

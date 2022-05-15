@@ -23,3 +23,4 @@ comrak = "0.12"
 milli = { git = "https://github.com/meilisearch/milli", rev = "6ee67df128b63f40eedfe1cb2edfa1a59492e310"} # https://github.com/meilisearch/milli/releases/tag/v0.26.4
 tempfile = "3.3"
 scraper = "0.13"
+rust-embed = "6.4"
