@@ -46,3 +46,9 @@ pub struct ListPosts {
     pub intro: String,
     pub published: bool,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct GetPost {
+    pub content: String,
+    pub metadata: ListPosts,
+}

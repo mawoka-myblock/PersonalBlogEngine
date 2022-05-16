@@ -22,9 +22,7 @@ pub async fn get_raw_markdown(
     .await?
     .map_err(actix_web::error::ErrorNotFound)?;
     match markdown {
-        Some(markdown) => Ok(HttpResponse::Ok()
-            .content_type("text/markdown")
-            .body(markdown)),
+        Some(markdown) => Ok(HttpResponse::Ok().json(markdown)),
         None => Err(actix_web::error::ErrorNotFound("Post not found")),
     }
 }
@@ -42,7 +40,7 @@ pub async fn get_rendered_markdown(
     .await?
     .map_err(actix_web::error::ErrorNotFound)?;
     match html {
-        Some(html) => Ok(HttpResponse::Ok().content_type("text/html").body(html)),
+        Some(html) => Ok(HttpResponse::Ok().json(html)),
         None => Err(actix_web::error::ErrorNotFound("Post not found")),
     }
 }

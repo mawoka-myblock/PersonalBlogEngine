@@ -1,5 +1,5 @@
 use crate::models;
-use crate::models::{NewPost, Post};
+use crate::models::{GetPost, ListPosts, NewPost, Post};
 use crate::schema;
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
@@ -23,18 +23,22 @@ fn get_markdown_options() -> ComrakOptions {
     options
 }
 
+fn post_to_listpost(post: Post) -> ListPosts {
+    models::ListPosts {
+        slug: post.slug,
+        title: post.title,
+        created_at: post.created_at,
+        updated_at: post.updated_at,
+        tags: post.tags,
+        intro: post.intro,
+        published: post.published,
+    }
+}
+
 fn posts_to_listposts(posts: Vec<Post>) -> Vec<models::ListPosts> {
     let mut listposts = Vec::new();
     for post in posts {
-        listposts.push(models::ListPosts {
-            slug: post.slug,
-            title: post.title,
-            created_at: post.created_at,
-            updated_at: post.updated_at,
-            tags: post.tags,
-            intro: post.intro,
-            published: post.published,
-        });
+        listposts.push(post_to_listpost(post));
     }
     listposts
 }
@@ -113,14 +117,17 @@ pub fn setup(input_email: &str, input_password: &str, conn: &PgConnection) -> Re
     Ok(())
 }
 
-pub fn get_raw_markdown(slug_input: &str, conn: &PgConnection) -> Result<Option<String>, DbError> {
+pub fn get_raw_markdown(slug_input: &str, conn: &PgConnection) -> Result<Option<GetPost>, DbError> {
     use schema::posts::dsl::{posts, slug};
     let post_obj = posts
         .filter(slug.like(slug_input))
         .first::<models::Post>(conn);
 
     match post_obj {
-        Ok(post) => Ok(Some(post.content)),
+        Ok(post) => Ok(Some(GetPost {
+            content: post.content.to_string(),
+            metadata: post_to_listpost(post),
+        })),
         Err(_) => Ok(None),
     }
 }
@@ -128,13 +135,16 @@ pub fn get_raw_markdown(slug_input: &str, conn: &PgConnection) -> Result<Option<
 pub fn get_rendered_markdown(
     slug_input: &str,
     conn: &PgConnection,
-) -> Result<Option<String>, DbError> {
+) -> Result<Option<GetPost>, DbError> {
     use schema::posts::dsl::{posts, slug};
     let post = posts
         .filter(slug.like(slug_input))
         .first::<models::Post>(conn);
     match post {
-        Ok(post) => Ok(Some(post.rendered_content.unwrap())),
+        Ok(post) => Ok(Some(GetPost {
+            content: post.rendered_content.as_ref().unwrap().to_string(),
+            metadata: post_to_listpost(post),
+        })),
         Err(_) => Ok(None),
     }
 
