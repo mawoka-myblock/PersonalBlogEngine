@@ -13,11 +13,14 @@ extern crate dotenv;
 #[macro_use]
 extern crate diesel_migrations;
 
+
+
 use actix_identity::{CookieIdentityPolicy, IdentityService};
 use actix_web::{web, App, HttpServer};
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel_migrations::{embed_migrations};
+use actix_cors::Cors;
 
 pub type DbPool = Pool<ConnectionManager<PgConnection>>;
 
@@ -43,6 +46,9 @@ async fn main() -> std::io::Result<()> {
         let policy = CookieIdentityPolicy::new(&[0; 32])
             .name("auth-cookie")
             .secure(false);
+        let cors = Cors::default()
+              .allow_any_origin();
+
         App::new()
             /*            .wrap(
                 SessionMiddleware::new(
@@ -53,6 +59,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(IdentityService::new(policy))
             // .wrap(middleware::Logger::default())
             .app_data(web::Data::new(pool.clone()))
+            .wrap(cors)
             .service(
                 web::scope("/api/v1")
                     .service(
