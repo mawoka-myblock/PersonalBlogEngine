@@ -10,9 +10,10 @@ services:
       - postgres-data:/var/lib/postgresql/data
     restart: always
   api:
-    build:
-      context: .
-      dockerfile: ./Dockerfile
+    #build:
+    #  context: .
+    #  dockerfile: ./Dockerfile
+    image: ghcr.io/mawoka-myblock/personalblogengine:master
     ports:
       - "8080:8080"
     environment:
