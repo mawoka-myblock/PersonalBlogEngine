@@ -16,7 +16,6 @@ WORKDIR /PersonalBlogEngine
 COPY ./Cargo.* .
 RUN mkdir -p frontend/dist
 COPY --from=frontend /usr/src/app/dist frontend/dist
-ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
 # RUN ls -la && cat Cargo.toml && ls frontend/dist
 RUN cargo build --release
 RUN rm src/*.rs
@@ -41,10 +40,12 @@ EXPOSE 8080
 #    && useradd -g $APP_USER $APP_USER \
 #    && mkdir -p ${APP}
 
-COPY --from=builder /PersonalBlogEngine/target/release/PersonalBlogEngine ${APP}/PersonalBlogEngine
+COPY --from=builder /PersonalBlogEngine/target/release/PersonalBlogEngine /PersonalBlogEngine
 
 #RUN chown -R $APP_USER:$APP_USER ${APP}
 
 #USER $APP_USER
-
-CMD ["./PersonalBlogEngine"]
+RUN apt-get update \
+    && apt-get install -y libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+CMD ["/PersonalBlogEngine"]
