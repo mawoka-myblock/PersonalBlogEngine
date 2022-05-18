@@ -1,0 +1,731 @@
+openapi: 3.0.0
+info:
+  title: PersonalBlogEngine
+  contact: { }
+  version: '1.0'
+servers:
+  - url: http://localhost:8080/api/v1
+    variables: { }
+# The following bug is a problem: https://github.com/swagger-api/swagger-ui/issues/4402
+paths:
+  /manage/create_post:
+    post:
+      security:
+        - { }
+        - cookieAuth: [ ]
+      tags:
+        - Private
+      summary: Create Post
+      operationId: CreatePost
+      parameters: [ ]
+      requestBody:
+        description: ''
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePostRequest'
+            example:
+              slug: test
+              title: test
+              content: '# Hello World!'
+              published: false
+              tags:
+                - test
+                - intro
+              intro: Just a small test post!
+        required: true
+      responses:
+        '200':
+          description: OK
+          headers: { }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatePostResponse'
+              example:
+                slug: test
+                title: test
+                content: '# Hello World!'
+                rendered_content: null
+                published: false
+                created_at: 2022-05-18T15:55:56.553397096
+                updated_at: 2022-05-18T15:55:56.553397257
+                tags: [ test,intro ]
+      deprecated: false
+  /manage/post:
+    delete:
+      security:
+        - { }
+        - cookieAuth: [ ]
+      tags:
+        - Private
+      summary: Delete Post
+      operationId: DeletePost
+      parameters:
+        - name: slug
+          in: query
+          description: ''
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: string
+            example: test
+      responses:
+        '200':
+          description: 'Post deleted successfully'
+          headers: { }
+        '404':
+          description: "Post wasn't found"
+          headers: { }
+      deprecated: false
+    get:
+      security:
+        - { }
+        - cookieAuth: [ ]
+      tags:
+        - Private
+      summary: Get Single Post
+      operationId: GetSinglePost
+      parameters:
+        - name: slug
+          in: query
+          description: ''
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: string
+            example: test
+      responses:
+        '200':
+          description: ''
+          headers: { }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatePostResponse"
+      deprecated: false
+  /manage/setup:
+    post:
+      tags:
+        - Private
+      summary: Setup
+      operationId: Setup
+      parameters: [ ]
+      requestBody:
+        description: ''
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetupRequest'
+            example:
+              email: test@test.com
+              password: Password
+        required: true
+      responses:
+        '200':
+          description: 'Setup completed successfully'
+          headers: { }
+        '400':
+          description: 'Setup already completed'
+      deprecated: false
+    get:
+      tags:
+        - Private
+      summary: Check Setup
+      operationId: CheckSetup
+      parameters: [ ]
+      responses:
+        '200':
+          description: ''
+          headers: { }
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Setup already completed
+      deprecated: false
+  /account/login:
+    post:
+      tags:
+        - Private
+      summary: Login
+      operationId: Login
+      parameters: [ ]
+      requestBody:
+        description: ''
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: test@test.com
+              password: Password
+        required: true
+      responses:
+        '200':
+          description: ''
+          headers:
+            Set-Cookie:
+              description: "Used to authenticate requests"
+              schema:
+                type: string
+                example: auth-cookie=jgnhfdbghdfdgfdghfdghdggdfbgdfbh=; HttpOnly; Path=/
+        '401':
+          description: 'User not found or wrong password'
+          headers: { }
+      deprecated: false
+  /account/check:
+    get:
+      security:
+        - { }
+        - cookieAuth: [ ]
+      tags:
+        - Private
+      summary: Check Login
+      operationId: CheckLogin
+      parameters: [ ]
+      responses:
+        '200':
+          description: 'Empty string'
+          headers: { }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckLoginResponse'
+              example:
+                is_logged_in: true
+                user: test@test.com
+        '401':
+          description: 'Empty string'
+          headers: { }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckLoginResponse'
+              example:
+                is_logged_in: false
+                user: null
+      deprecated: false
+  /account/logout:
+    get:
+      security:
+        - { }
+        - cookieAuth: [ ]
+      tags:
+        - Private
+      summary: Logout
+      operationId: Logout
+      parameters: [ ]
+      responses:
+        '200':
+          description: ''
+          headers: { }
+      deprecated: false
+  /manage/update:
+    put:
+      security:
+        - { }
+        - cookieAuth: [ ]
+      tags:
+        - Private
+      summary: Update Post
+      operationId: UpdatePost
+      parameters: [ ]
+      requestBody:
+        description: ''
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePostRequest'
+            example:
+              slug: test
+              title: test-Post
+              content: '# Test!!!'
+              published: true
+              tags:
+                - test
+                - intro
+              intro: Just a small test post!
+        required: true
+      responses:
+        '200':
+          description: ''
+          headers: { }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatePostResponse"
+      deprecated: false
+  /manage/posts:
+    get:
+      security:
+        - { }
+        - cookieAuth: [ ]
+      tags:
+        - Private
+      summary: Get Private Posts
+      operationId: GetPrivatePosts
+      parameters:
+        - name: offset
+          in: query
+          description: ''
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: integer
+            format: int32
+            example: 0
+      responses:
+        '200':
+          description: ''
+          headers: { }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListPostResponse"
+
+      deprecated: false
+  /public/raw:
+    get:
+      tags:
+        - Public
+      summary: Get Markdown
+      operationId: GetMarkdown
+      parameters:
+        - name: slug
+          in: query
+          description: ''
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: string
+            example: test
+      responses:
+        '200':
+          description: ''
+          headers: { }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetContent"
+              example:
+                content: "# Hello World!"
+                metadata:
+                  slug: "test"
+                  title: "test"
+                  created_at: "2022-05-18T16:11:03.583426"
+                  updated_at: "2022-05-18T16:11:03.583426"
+                  tags: [ intro, test ]
+                  intro: "Just a small test post!"
+                  published: true
+      deprecated: false
+  /public/rendered:
+    get:
+      tags:
+        - Public
+      summary: Get HTML
+      operationId: GetHTML
+      parameters:
+        - name: slug
+          in: query
+          description: ''
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: string
+            example: test
+      responses:
+        '200':
+          description: ''
+          headers: { }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetContent"
+              example:
+                content: '<h1><a href=\"#hello-world\" aria-hidden=\"true\" class=\"anchor\" id=\"header-hello-world\"></a>Hello World!</h1>\n'
+                metadata:
+                  slug: "test"
+                  title: "test"
+                  created_at: "2022-05-18T16:11:03.583426"
+                  updated_at: "2022-05-18T16:11:03.583426"
+                  tags: [ intro, test ]
+                  intro: "Just a small test post!"
+                  published: true
+      deprecated: false
+  /public/posts:
+    get:
+      tags:
+        - Public
+      summary: Get public posts
+      operationId: Getpublicposts
+      parameters:
+        - name: offset
+          in: query
+          description: ''
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: integer
+            format: int32
+            example: 0
+      responses:
+        '200':
+          description: ''
+          headers: { }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListPostResponse"
+
+      deprecated: false
+  /public/tags/{tag}:
+    get:
+      tags:
+        - Public
+      summary: Get Posts with Tags
+      operationId: GetPostswithTags
+      parameters:
+        - name: offset
+          in: query
+          description: ''
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: integer
+            format: int32
+            example: 0
+        - in: path
+          name: tag
+          schema:
+            type: string
+          required: true
+          description: "Get all posts with contain the tag"
+      responses:
+        '200':
+          description: ''
+          headers: { }
+      deprecated: false
+  /public/search:
+    get:
+      tags:
+        - Public
+      summary: Search
+      operationId: Search
+      parameters:
+        - name: query
+          in: query
+          description: ''
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: string
+            example: '*'
+      responses:
+        '200':
+          description: ''
+          headers: { }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListPostResponse"
+      deprecated: false
+components:
+  securitySchemes:
+    cookieAuth: # arbitrary name for the security scheme; will be used in the "security" key later
+      type: apikey
+      in: cookie
+      name: auth-cookie  # cookie name
+  schemas:
+    ListPostResponse:
+      title: ListPostResponse
+      type: array
+      required:
+        - slug
+        - title
+        - published
+        - created_at
+        - updated_at
+        - tags
+        - intro
+      properties:
+        slug:
+          type: string
+        title:
+          type: string
+        published:
+          type: boolean
+        created_at:
+          type: date-time
+        updated_at:
+          type: date-time
+        tags:
+          type: array
+          items:
+            type: string
+          description: ''
+        intro:
+          type: string
+      example:
+        slug: test
+        title: test
+        created_at: 2022-05-18T16:05:29.467934
+        updated_at: 2022-05-18T16:05:29.467935
+        tags: [ test, intro ]
+        intro: Just a small test post!
+        published: false
+
+    CreatePostResponse:
+      title: CreatePostResponse
+      required:
+        - slug
+        - title
+        - content
+        - rendered_content
+        - published
+        - created_at
+        - updated_at
+        - tags
+        - intro
+      type: object
+      properties:
+        slug:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+        rendered_content:
+          type: string
+        published:
+          type: boolean
+        created_at:
+          type: date-time
+        updated_at:
+          type: date-time
+        tags:
+          type: array
+          items:
+            type: string
+          description: ''
+        intro:
+          type: string
+      example:
+        slug: test
+        title: test
+        content: '# Hello World!'
+        rendered_content: |
+          <h1><a href=\"#hello-world\" aria-hidden=\"true\" class=\"anchor\" id=\"header-hello-world\"></a>Hello World!</h1>\n
+        published: false
+        created_at: 2022-05-18T15:55:56.553397096
+        updated_at: 2022-05-18T15:55:56.553397257
+        tags:
+          - test
+          - intro
+        intro: Just a small test post!
+    CheckLoginResponse:
+      title: CheckLoginResponse
+      required:
+        - is_logged_in
+        - user
+      type: object
+      properties:
+        is_logged_in:
+          type: boolean
+        user:
+          type: string
+          nullable: true
+    CreatePostRequest:
+      title: CreatePostRequest
+      required:
+        - slug
+        - title
+        - content
+        - published
+        - tags
+        - intro
+      type: object
+      properties:
+        slug:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+        published:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: string
+          description: ''
+        intro:
+          type: string
+      example:
+        slug: test
+        title: test
+        content: '# Hello World!'
+        published: false
+        tags:
+          - test
+          - intro
+        intro: Just a small test post!
+    CreatePost:
+      title: CreatePost
+      required:
+        - slug
+        - title
+        - content
+        - rendered_content
+        - published
+        - created_at
+        - updated_at
+        - tags
+      type: object
+      properties:
+        slug:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+        rendered_content:
+          type: string
+          nullable: true
+        published:
+          type: boolean
+        created_at:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          nullable: true
+        tags:
+          type: string
+      example:
+        slug: test
+        title: test
+        content: '# Hello World!'
+        rendered_content: null
+        published: false
+        created_at: null
+        updated_at: null
+        tags: test,intro
+    SetupRequest:
+      title: SetupRequest
+      required:
+        - email
+        - password
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      example:
+        email: test@test.com
+        password: Password
+    LoginRequest:
+      title: LoginRequest
+      required:
+        - email
+        - password
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      example:
+        email: test@test.com
+        password: Password
+    UpdatePostRequest:
+      title: UpdatePostRequest
+      required:
+        - slug
+        - title
+        - content
+        - published
+        - tags
+        - intro
+      type: object
+      properties:
+        slug:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+        published:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: string
+          description: ''
+        intro:
+          type: string
+      example:
+        slug: test
+        title: test-Post
+        content: '# Test!!!'
+        published: true
+        tags:
+          - test
+          - intro
+        intro: Just a small test post!
+    ResponseMetadata:
+      title: ResponseMetadata
+      required:
+        - slug
+        - title
+        - created_at
+        - updated_at
+        - tags
+        - intro
+        - published
+      type: object
+      properties:
+        slug:
+          type: string
+        title:
+          type: string
+        created_at:
+          type: date-time
+        updated_at:
+          type: date-time
+        tags:
+          type: array
+        intro:
+          type: string
+        published:
+          type: boolean
+
+    GetContent:
+      title: GetContent
+      required:
+        - content
+        - metadata
+      type: object
+      properties:
+        content:
+          type: string
+        metadata:
+          $ref: "#/components/schemas/ResponseMetadata"
+
+
+
+tags:
+  - name: Private
+  - name: Public
+
+security:
+  - cookieAuth: [ ]
