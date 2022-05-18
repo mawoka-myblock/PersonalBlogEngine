@@ -118,9 +118,9 @@ pub fn setup(input_email: &str, input_password: &str, conn: &PgConnection) -> Re
 }
 
 pub fn get_raw_markdown(slug_input: &str, conn: &PgConnection) -> Result<Option<GetPost>, DbError> {
-    use schema::posts::dsl::{posts, slug};
+    use schema::posts::dsl::{posts, slug, published};
     let post_obj = posts
-        .filter(slug.like(slug_input))
+        .filter(slug.like(slug_input).and(published.eq(true)))
         .first::<models::Post>(conn);
 
     match post_obj {
@@ -136,9 +136,9 @@ pub fn get_rendered_markdown(
     slug_input: &str,
     conn: &PgConnection,
 ) -> Result<Option<GetPost>, DbError> {
-    use schema::posts::dsl::{posts, slug};
+    use schema::posts::dsl::{posts, slug, published};
     let post = posts
-        .filter(slug.like(slug_input))
+        .filter(slug.like(slug_input).and(published.eq(true)))
         .first::<models::Post>(conn);
     match post {
         Ok(post) => Ok(Some(GetPost {
