@@ -66,13 +66,57 @@
                     },
                     body: JSON.stringify(post)
                 })
+                if (resp.status !== 200) {
+                    alert("Couldn't save post!")
+                    return
+                }
+            } else {
+                alert("Couldn't save post!")
+                return
+
             }
         }
     }
 </script>
-<button class="fixed top-0 left-0 bg-green-500" on:click={() => {postSelected = null}}>Close</button>
-<button class="fixed top-0 right-0 bg-green-500" on:click={savePost}>Save</button>
-<div class="pt-6">
+<button
+        type="button"
+        class="fixed top-0 left-0 bg-white rounded-md p-2 inline-flex items-center justify-center text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 place-self-end"
+        on:click={() => {
+            savePost().then();
+			postSelected = null;
+		}}
+>
+    <span class="sr-only">Close menu</span>
+    <!-- Heroicons: outline/x -->
+    <svg
+            class="h-6 w-6"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+    >
+        <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+        />
+    </svg>
+</button>
+<button
+        type="button"
+        class="fixed top-0 right-0 bg-white rounded-md p-2 inline-flex items-center justify-center text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 place-self-end"
+        on:click={savePost}
+>
+    <span class="sr-only">Save Post</span>
+    <!-- Heroicons: outline/save -->
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+    </svg>
+</button>
+<div class="pt-12">
     {#await fetchPost()}
         <Spinner/>
 
