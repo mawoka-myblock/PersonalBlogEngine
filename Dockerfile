@@ -9,22 +9,6 @@ COPY frontend/ .
 RUN pnpm run build
 
 
-FROM rust:slim-buster as builder
-
-RUN USER=root cargo new --bin PersonalBlogEngine
-WORKDIR /PersonalBlogEngine
-COPY ./Cargo.* .
-RUN mkdir -p frontend/dist
-COPY --from=frontend /usr/src/app/dist frontend/dist
-# RUN ls -la && cat Cargo.toml && ls frontend/dist
-RUN cargo build --release
-RUN rm src/*.rs
-
-COPY . ./
-RUN rm ./target/release/deps/PersonalBlogEngine*
-RUN cargo build --release
-
-
 FROM rust:latest AS builder
 
 RUN update-ca-certificates
