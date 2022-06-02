@@ -20,6 +20,8 @@ table! {
         tags -> Array<Text>,
         intro -> Text,
         id -> Uuid,
+        thumbs_up -> Int2,
+        thumbs_down -> Int2,
     }
 }
 
@@ -30,4 +32,8 @@ table! {
     }
 }
 
-allow_tables_to_appear_in_same_query!(feedback, posts, users,);
+allow_tables_to_appear_in_same_query!(
+    feedback,
+    posts,
+    users,
+);

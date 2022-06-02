@@ -13,6 +13,7 @@ use milli::update::{IndexDocuments, IndexDocumentsConfig, IndexerConfig};
 use milli::Search;
 use serde::{Deserialize, Serialize};
 use std::io::Cursor;
+use crate::actions::post_to_listpost;
 
 extern crate milli;
 
@@ -102,14 +103,6 @@ pub fn search(term: &str, conn: &PgConnection) -> Result<Vec<ListPosts>, DbError
         .unwrap();
     Ok(res
         .into_iter()
-        .map(|kv| ListPosts {
-            slug: kv.slug,
-            title: kv.title,
-            created_at: kv.created_at,
-            updated_at: kv.updated_at,
-            tags: kv.tags,
-            intro: kv.intro,
-            published: kv.published,
-        })
+        .map(post_to_listpost)
         .collect())
 }

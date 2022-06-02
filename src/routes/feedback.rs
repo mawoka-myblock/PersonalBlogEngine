@@ -1,12 +1,8 @@
-use std::fmt::format;
 use crate::actions;
 use crate::DbPool;
-use actix_web::{get, post, web, Error, HttpRequest, HttpResponse};
+use actix_web::{post, web, Error, HttpRequest, HttpResponse};
 use blake3;
-use diesel::result::DatabaseErrorKind;
-use diesel::result::Error::DatabaseError;
 use serde::{Deserialize, Serialize};
-use crate::actions::DbError;
 use regex::Regex;
 
 #[derive(Serialize, Deserialize)]
@@ -52,14 +48,12 @@ pub async fn post_feedback(
         Ok(_) => Ok(HttpResponse::Ok().finish()),
         Err(e) => {
             let err_str = format!("{:?}", e);
-            println!("{:?}", e);
             let re = &RE;
             match re.captures(&*err_str) {
                 Some(l) => {
                     let res = l.get(1).unwrap().as_str();
                     return match res {
                         "UniqueViolation" => Ok(HttpResponse::Conflict().finish()),
-
                         _ => Ok(HttpResponse::Ok().finish())
                     }
                 }

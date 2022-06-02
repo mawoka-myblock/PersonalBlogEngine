@@ -25,7 +25,7 @@ fn get_markdown_options() -> ComrakOptions {
     options
 }
 
-fn post_to_listpost(post: Post) -> ListPosts {
+pub fn post_to_listpost(post: Post) -> ListPosts {
     models::ListPosts {
         slug: post.slug,
         title: post.title,
@@ -34,6 +34,8 @@ fn post_to_listpost(post: Post) -> ListPosts {
         tags: post.tags,
         intro: post.intro,
         published: post.published,
+        thumbs_down: post.thumbs_down,
+        thumbs_up: post.thumbs_up,
     }
 }
 
@@ -60,6 +62,8 @@ pub fn create_new_post(post: &NewPost, conn: &PgConnection) -> Result<models::Po
         tags: post.tags.clone(),
         intro: post.intro.clone(),
         id: Uuid::new_v4(),
+        thumbs_down: 0,
+        thumbs_up: 0
     };
     diesel::insert_into(table).values(&new_post).execute(conn)?;
     Ok(new_post)
@@ -204,6 +208,8 @@ pub fn update_post(
             None => post.intro,
         },
         id: post.id,
+        thumbs_down: post.thumbs_down,
+        thumbs_up: post.thumbs_up
     };
     // diesel::update(posts.find(slug_input)).set(&new_post).execute(&conn)?;
     /*    diesel::update(posts.find(slug_input))
@@ -274,6 +280,7 @@ pub fn submit_feedback(
     conn: &PgConnection,
 ) -> Result<bool, DbError> {
     use schema::feedback::table;
+
     let fb = Feedback {
         feedback_text: feedback_input.feedback,
         post_id: feedback_input.post_id,
@@ -282,5 +289,14 @@ pub fn submit_feedback(
         ip_hash: feedback_input.ip_hash,
     };
     diesel::insert_into(table).values(&fb).execute(conn)?;
+    use schema::posts::dsl::posts;
+    use schema::posts::dsl::{thumbs_up, thumbs_down, id};
+    let target = posts.filter(id.eq(feedback_input.post_id));
+    if feedback_input.thumbs_up {
+        diesel::update(target).set(thumbs_up.eq(thumbs_up + 1)).execute(conn)?;
+    } else {
+        diesel::update(target).set(thumbs_down.eq(thumbs_down + 1)).execute(conn)?;
+    };
+
     Ok(true)
 }

@@ -18,6 +18,8 @@ pub struct Post {
     pub tags: Vec<String>,
     pub intro: String,
     pub id: Uuid,
+    pub thumbs_up: i16,
+    pub thumbs_down: i16,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -38,6 +40,7 @@ pub struct User {
     pub password: String,
 }
 
+
 #[derive(Serialize, Deserialize)]
 pub struct ListPosts {
     pub slug: String,
@@ -47,6 +50,8 @@ pub struct ListPosts {
     pub tags: Vec<String>,
     pub intro: String,
     pub published: bool,
+    pub thumbs_up: i16,
+    pub thumbs_down: i16,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -56,7 +61,7 @@ pub struct GetPost {
 }
 
 #[derive(
-    Debug, Clone, Queryable, Serialize, Deserialize, AsChangeset, Insertable, Associations,
+Debug, Clone, Queryable, Serialize, Deserialize, AsChangeset, Insertable, Associations,
 )]
 #[table_name = "posts"]
 #[belongs_to(foreign_key = id)]
