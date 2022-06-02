@@ -1,5 +1,5 @@
 use crate::models;
-use crate::models::{GetPost, ListPosts, NewPost, Post};
+use crate::models::{Feedback, GetPost, ListPosts, NewPost, Post};
 use crate::schema;
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
@@ -7,6 +7,8 @@ use argon2::{
 };
 use comrak::{markdown_to_html, ComrakOptions};
 use diesel::prelude::*;
+use uuid::Uuid;
+use serde::{Serialize, Deserialize};
 
 pub type DbError = Box<dyn std::error::Error + Send + Sync>;
 
@@ -57,6 +59,7 @@ pub fn create_new_post(post: &NewPost, conn: &PgConnection) -> Result<models::Po
         updated_at: chrono::Utc::now().naive_utc(),
         tags: post.tags.clone(),
         intro: post.intro.clone(),
+        id: Uuid::new_v4(),
     };
     diesel::insert_into(table).values(&new_post).execute(conn)?;
     Ok(new_post)
@@ -200,6 +203,7 @@ pub fn update_post(
             Some(intro) => intro.to_string(),
             None => post.intro,
         },
+        id: post.id,
     };
     // diesel::update(posts.find(slug_input)).set(&new_post).execute(&conn)?;
     /*    diesel::update(posts.find(slug_input))
@@ -255,4 +259,28 @@ pub fn get_single_post(slug: &str, conn: &PgConnection) -> Result<models::Post, 
     use schema::posts::dsl::posts;
     let res = posts.find(slug).get_result::<Post>(conn)?;
     Ok(res)
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SubmitFeedbackInput {
+    pub thumbs_up: bool,
+    pub feedback: Option<String>,
+    pub ip_hash: Vec<u8>,
+    pub post_id: Uuid,
+}
+
+pub fn submit_feedback(
+    feedback_input: SubmitFeedbackInput,
+    conn: &PgConnection,
+) -> Result<bool, DbError> {
+    use schema::feedback::table;
+    let fb = Feedback {
+        feedback_text: feedback_input.feedback,
+        post_id: feedback_input.post_id,
+        thumbs_up: feedback_input.thumbs_up,
+        id: Uuid::new_v4(),
+        ip_hash: feedback_input.ip_hash,
+    };
+    diesel::insert_into(table).values(&fb).execute(conn)?;
+    Ok(true)
 }

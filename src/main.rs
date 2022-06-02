@@ -1,3 +1,6 @@
+#![allow(clippy::extra_unused_lifetimes)]
+#![allow(non_snake_case)]
+
 pub mod actions;
 pub mod db;
 pub mod models;
@@ -12,6 +15,8 @@ extern crate diesel;
 extern crate dotenv;
 #[macro_use]
 extern crate diesel_migrations;
+#[macro_use]
+extern crate lazy_static;
 
 use actix_cors::Cors;
 use actix_identity::{CookieIdentityPolicy, IdentityService};
@@ -82,6 +87,9 @@ async fn main() -> std::io::Result<()> {
                             .service(routes::public::get_posts) // GET post?offset=0
                             .service(routes::public::get_posts_with_tag) // GET post/{tag}?offset=0
                             .service(routes::public::search_posts), // GET search?q=query
+                    )
+                    .service(
+                        web::scope("/feedback").service(routes::feedback::post_feedback), // POST /
                     ),
             )
             .service(

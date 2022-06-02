@@ -1,6 +1,16 @@
 table! {
+    feedback (id) {
+        id -> Uuid,
+        ip_hash -> Bytea,
+        feedback_text -> Nullable<Text>,
+        thumbs_up -> Bool,
+        post_id -> Uuid,
+    }
+}
+
+table! {
     posts (slug) {
-        slug -> Varchar,
+        slug -> Text,
         title -> Varchar,
         content -> Text,
         rendered_content -> Nullable<Text>,
@@ -9,6 +19,7 @@ table! {
         updated_at -> Timestamp,
         tags -> Array<Text>,
         intro -> Text,
+        id -> Uuid,
     }
 }
 
@@ -19,4 +30,4 @@ table! {
     }
 }
 
-allow_tables_to_appear_in_same_query!(posts, users,);
+allow_tables_to_appear_in_same_query!(feedback, posts, users,);

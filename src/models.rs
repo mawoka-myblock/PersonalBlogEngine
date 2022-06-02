@@ -1,6 +1,7 @@
 use super::chrono;
 use super::schema::*;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 // #[derive(Debug, Clone, Queryable, Insertable, Serialize, Deserialize)]
 #[derive(Debug, Clone, Queryable, Serialize, Deserialize, Insertable, AsChangeset)]
@@ -16,6 +17,7 @@ pub struct Post {
     pub updated_at: chrono::NaiveDateTime,
     pub tags: Vec<String>,
     pub intro: String,
+    pub id: Uuid,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -51,4 +53,19 @@ pub struct ListPosts {
 pub struct GetPost {
     pub content: String,
     pub metadata: ListPosts,
+}
+
+#[derive(
+    Debug, Clone, Queryable, Serialize, Deserialize, AsChangeset, Insertable, Associations,
+)]
+#[table_name = "posts"]
+#[belongs_to(foreign_key = id)]
+#[primary_key(id)]
+#[table_name = "feedback"]
+pub struct Feedback {
+    pub id: Uuid,
+    pub ip_hash: Vec<u8>,
+    pub feedback_text: Option<String>,
+    pub thumbs_up: bool,
+    pub post_id: Uuid,
 }
