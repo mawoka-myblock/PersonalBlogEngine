@@ -321,7 +321,7 @@ pub fn get_x_feedback_for_post(limit: i64, input_post_id: Uuid, conn: &PgConnect
     use schema::feedback::table as fb_table;
     use schema::posts::table;
     use schema::posts::dsl::{posts, id};
-    let res = fb_table
+    let res = fb_table // SELECT * from feedback left join posts p on p.id = feedback.post_id where feedback_text = 'hallo welt'
         .left_outer_join(id.eq(post_id))
         .filter(post_id.eq(input_post_id))
         .order_by(created_at.desc()).limit(limit)
