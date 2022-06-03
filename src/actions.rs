@@ -9,6 +9,8 @@ use comrak::{markdown_to_html, ComrakOptions};
 use diesel::prelude::*;
 use uuid::Uuid;
 use serde::{Serialize, Deserialize};
+use crate::routes::manage::get_post;
+use crate::schema::posts;
 
 pub type DbError = Box<dyn std::error::Error + Send + Sync>;
 
@@ -307,21 +309,30 @@ pub fn get_last_x_feedback(limit: i64, conn: &PgConnection) -> Result<Vec<Public
     let res = feedback.order_by(created_at.desc()).limit(limit).load::<Feedback>(conn)?;
     Ok(res.iter().map(|p| PublicFeedback {
         id: p.id,
-        post_id: p.post_id,
+        post: post_to_listpost(get_single_post("test", conn).unwrap()),
         thumbs_up: p.thumbs_up,
         created_at: p.created_at,
-        feedback_text: p.feedback_text.as_ref().and_then(|x| Option::from(x.to_string()))
+        feedback_text: p.feedback_text.as_ref().and_then(|x| Option::from(x.to_string())),
     }).collect())
 }
 
 pub fn get_x_feedback_for_post(limit: i64, input_post_id: Uuid, conn: &PgConnection) -> Result<Vec<PublicFeedback>, DbError> {
     use schema::feedback::dsl::{feedback, created_at, post_id};
-    let res = feedback.filter(post_id.eq(input_post_id)).order_by(created_at.desc()).limit(limit).load::<Feedback>(conn)?;
-    Ok(res.iter().map(|p| PublicFeedback {
-        id: p.id,
-        post_id: p.post_id,
-        thumbs_up: p.thumbs_up,
-        created_at: p.created_at,
-        feedback_text: p.feedback_text.as_ref().and_then(|x| Option::from(x.to_string()))
-    }).collect())
+    use schema::feedback::table as fb_table;
+    use schema::posts::table;
+    use schema::posts::dsl::{posts, id};
+    let res = fb_table
+        .left_outer_join(id.eq(post_id))
+        .filter(post_id.eq(input_post_id))
+        .order_by(created_at.desc()).limit(limit)
+        .get_results(conn)?;
+    let post = get_single_post("test", conn)?;
+    println!("{:?}", res);
+    Ok(vec![PublicFeedback {
+        post: post_to_listpost(post),
+        feedback_text: None,
+        id: Uuid::new_v4(),
+        created_at: chrono::Utc::now().naive_utc(),
+        thumbs_up: false,
+    }])
 }

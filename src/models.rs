@@ -41,7 +41,7 @@ pub struct User {
 }
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ListPosts {
     pub slug: String,
     pub title: String,
@@ -61,7 +61,7 @@ pub struct GetPost {
 }
 
 #[derive(
-Debug, Clone, Queryable, Serialize, Deserialize, AsChangeset, Insertable, Associations,
+Debug, Clone, Queryable, Serialize, Deserialize, AsChangeset, Insertable, Associations, JoinTo
 )]
 #[table_name = "posts"]
 #[belongs_to(foreign_key = id)]
@@ -76,11 +76,11 @@ pub struct Feedback {
     pub created_at: chrono::NaiveDateTime
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Queryable)]
 pub struct PublicFeedback {
     pub id: Uuid,
     pub thumbs_up: bool,
-    pub post_id: Uuid,
+    pub post: ListPosts,
     pub feedback_text: Option<String>,
     pub created_at: chrono::NaiveDateTime
 }
