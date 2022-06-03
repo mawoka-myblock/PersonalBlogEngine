@@ -1,5 +1,5 @@
 use crate::models;
-use crate::models::{Feedback, GetPost, ListPosts, NewPost, Post};
+use crate::models::{Feedback, GetPost, ListPosts, NewPost, Post, PublicFeedback};
 use crate::schema;
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
@@ -63,7 +63,7 @@ pub fn create_new_post(post: &NewPost, conn: &PgConnection) -> Result<models::Po
         intro: post.intro.clone(),
         id: Uuid::new_v4(),
         thumbs_down: 0,
-        thumbs_up: 0
+        thumbs_up: 0,
     };
     diesel::insert_into(table).values(&new_post).execute(conn)?;
     Ok(new_post)
@@ -209,7 +209,7 @@ pub fn update_post(
         },
         id: post.id,
         thumbs_down: post.thumbs_down,
-        thumbs_up: post.thumbs_up
+        thumbs_up: post.thumbs_up,
     };
     // diesel::update(posts.find(slug_input)).set(&new_post).execute(&conn)?;
     /*    diesel::update(posts.find(slug_input))
@@ -287,6 +287,7 @@ pub fn submit_feedback(
         thumbs_up: feedback_input.thumbs_up,
         id: Uuid::new_v4(),
         ip_hash: feedback_input.ip_hash,
+        created_at: chrono::Utc::now().naive_utc(),
     };
     diesel::insert_into(table).values(&fb).execute(conn)?;
     use schema::posts::dsl::posts;
@@ -299,4 +300,28 @@ pub fn submit_feedback(
     };
 
     Ok(true)
+}
+
+pub fn get_last_x_feedback(limit: i64, conn: &PgConnection) -> Result<Vec<PublicFeedback>, DbError> {
+    use schema::feedback::dsl::{feedback, created_at};
+    let res = feedback.order_by(created_at.desc()).limit(limit).load::<Feedback>(conn)?;
+    Ok(res.iter().map(|p| PublicFeedback {
+        id: p.id,
+        post_id: p.post_id,
+        thumbs_up: p.thumbs_up,
+        created_at: p.created_at,
+        feedback_text: p.feedback_text.as_ref().and_then(|x| Option::from(x.to_string()))
+    }).collect())
+}
+
+pub fn get_x_feedback_for_post(limit: i64, input_post_id: Uuid, conn: &PgConnection) -> Result<Vec<PublicFeedback>, DbError> {
+    use schema::feedback::dsl::{feedback, created_at, post_id};
+    let res = feedback.filter(post_id.eq(input_post_id)).order_by(created_at.desc()).limit(limit).load::<Feedback>(conn)?;
+    Ok(res.iter().map(|p| PublicFeedback {
+        id: p.id,
+        post_id: p.post_id,
+        thumbs_up: p.thumbs_up,
+        created_at: p.created_at,
+        feedback_text: p.feedback_text.as_ref().and_then(|x| Option::from(x.to_string()))
+    }).collect())
 }

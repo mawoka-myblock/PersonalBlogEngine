@@ -5,6 +5,7 @@ table! {
         feedback_text -> Nullable<Text>,
         thumbs_up -> Bool,
         post_id -> Uuid,
+        created_at -> Timestamp,
     }
 }
 

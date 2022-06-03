@@ -15,5 +15,6 @@ CREATE TABLE feedback
     ip_hash       bytea UNIQUE     NOT NULL,
     feedback_text text             NULL,
     thumbs_up     boolean          NOT NULL,
-    post_id       uuid             NOT NULL REFERENCES posts (id) ON DELETE CASCADE
+    post_id       uuid             NOT NULL REFERENCES posts (id) ON DELETE CASCADE,
+    created_at    timestamp        NOT NULL        DEFAULT now()
 );

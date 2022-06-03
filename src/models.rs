@@ -73,4 +73,14 @@ pub struct Feedback {
     pub feedback_text: Option<String>,
     pub thumbs_up: bool,
     pub post_id: Uuid,
+    pub created_at: chrono::NaiveDateTime
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PublicFeedback {
+    pub id: Uuid,
+    pub thumbs_up: bool,
+    pub post_id: Uuid,
+    pub feedback_text: Option<String>,
+    pub created_at: chrono::NaiveDateTime
 }

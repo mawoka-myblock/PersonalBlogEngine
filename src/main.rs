@@ -89,7 +89,10 @@ async fn main() -> std::io::Result<()> {
                             .service(routes::public::search_posts), // GET search?q=query
                     )
                     .service(
-                        web::scope("/feedback").service(routes::feedback::post_feedback), // POST /
+                        web::scope("/feedback")
+                            .service(routes::feedback::post_feedback) // POST /
+                            .service(routes::feedback::get_feedback_from_post) // GET /post?limit=Int&post_id=UUID
+                            .service(routes::feedback::get_feedback_list) // GET /?limit=Int
                     ),
             )
             .service(
@@ -98,7 +101,7 @@ async fn main() -> std::io::Result<()> {
                     .service(routes::dashboard::dist),
             )
     })
-    .bind(("0.0.0.0", 8080))?
-    .run()
-    .await
+        .bind(("0.0.0.0", 8080))?
+        .run()
+        .await
 }
