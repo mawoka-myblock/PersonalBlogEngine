@@ -15,8 +15,6 @@ extern crate diesel;
 extern crate dotenv;
 #[macro_use]
 extern crate diesel_migrations;
-#[macro_use]
-extern crate lazy_static;
 
 use actix_cors::Cors;
 use actix_identity::{CookieIdentityPolicy, IdentityService};
@@ -92,7 +90,7 @@ async fn main() -> std::io::Result<()> {
                         web::scope("/feedback")
                             .service(routes::feedback::post_feedback) // POST /
                             .service(routes::feedback::get_feedback_from_post) // GET /post?limit=Int&post_id=UUID
-                            .service(routes::feedback::get_feedback_list) // GET /?limit=Int
+                            .service(routes::feedback::get_feedback_list), // GET /?limit=Int
                     ),
             )
             .service(
@@ -101,7 +99,7 @@ async fn main() -> std::io::Result<()> {
                     .service(routes::dashboard::dist),
             )
     })
-        .bind(("0.0.0.0", 8080))?
-        .run()
-        .await
+    .bind(("0.0.0.0", 8080))?
+    .run()
+    .await
 }

@@ -2,15 +2,29 @@ use crate::models;
 use crate::models::{Feedback, GetPost, ListPosts, NewPost, Post, PublicFeedback};
 use crate::schema;
 use argon2::{
-    password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
+    password_hash::{
+        self, rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString,
+    },
     Argon2,
 };
 use comrak::{markdown_to_html, ComrakOptions};
 use diesel::prelude::*;
+use diesel::r2d2;
+use serde::{Deserialize, Serialize};
+use thiserror::Error;
 use uuid::Uuid;
-use serde::{Serialize, Deserialize};
 
-pub type DbError = Box<dyn std::error::Error + Send + Sync>;
+#[derive(Error, Debug)]
+pub enum AppError {
+    #[error("Error executing query")]
+    QueryError(#[from] diesel::result::Error),
+    #[error("Pool error")]
+    PoolError(#[from] r2d2::PoolError),
+    #[error("Password could not be hashed")]
+    PasswordHashError(#[from] password_hash::Error),
+    #[error("Unknown error occured")]
+    Unknown,
+}
 
 fn get_markdown_options() -> ComrakOptions {
     let mut options = ComrakOptions::default();
@@ -47,7 +61,7 @@ fn posts_to_listposts(posts: Vec<Post>) -> Vec<models::ListPosts> {
     listposts
 }
 
-pub fn create_new_post(post: &NewPost, conn: &PgConnection) -> Result<models::Post, DbError> {
+pub fn create_new_post(post: &NewPost, conn: &PgConnection) -> Result<models::Post, AppError> {
     use schema::posts::table;
 
     let rendered_content = markdown_to_html(&post.content, &get_markdown_options());
@@ -69,7 +83,7 @@ pub fn create_new_post(post: &NewPost, conn: &PgConnection) -> Result<models::Po
     Ok(new_post)
 }
 
-pub fn delete_post(slug_input: &str, conn: &PgConnection) -> Result<usize, DbError> {
+pub fn delete_post(slug_input: &str, conn: &PgConnection) -> Result<usize, AppError> {
     use schema::posts::dsl::{posts, slug};
     let num_deleted = diesel::delete(posts.filter(slug.like(slug_input))).execute(conn)?;
     Ok(num_deleted)
@@ -79,7 +93,7 @@ pub fn check_user(
     email_input: &str,
     password_input: &str,
     conn: &PgConnection,
-) -> Result<Option<models::User>, DbError> {
+) -> Result<Option<models::User>, AppError> {
     use schema::users::dsl::{email, users};
     // let argon2 = Argon2::default();
     // let salt = SaltString::generate(&mut OsRng);
@@ -99,19 +113,19 @@ pub fn check_user(
     }
 }
 
-pub fn count_users(conn: &PgConnection) -> Result<usize, DbError> {
+pub fn count_users(conn: &PgConnection) -> Result<usize, AppError> {
     use schema::users::dsl::users;
     let count = users.count().get_result::<i64>(conn)?;
     Ok(count as usize)
 }
 
-pub fn count_posts(conn: &PgConnection) -> Result<usize, DbError> {
+pub fn count_posts(conn: &PgConnection) -> Result<usize, AppError> {
     use schema::posts::dsl::posts;
     let count = posts.count().get_result::<i64>(conn)?;
     Ok(count as usize)
 }
 
-pub fn setup(input_email: &str, input_password: &str, conn: &PgConnection) -> Result<(), DbError> {
+pub fn setup(input_email: &str, input_password: &str, conn: &PgConnection) -> Result<(), AppError> {
     use schema::users::dsl::users;
     let argon2 = Argon2::default();
     let salt = SaltString::generate(&mut OsRng);
@@ -124,7 +138,10 @@ pub fn setup(input_email: &str, input_password: &str, conn: &PgConnection) -> Re
     Ok(())
 }
 
-pub fn get_raw_markdown(slug_input: &str, conn: &PgConnection) -> Result<Option<GetPost>, DbError> {
+pub fn get_raw_markdown(
+    slug_input: &str,
+    conn: &PgConnection,
+) -> Result<Option<GetPost>, AppError> {
     use schema::posts::dsl::{posts, published, slug};
     let post_obj = posts
         .filter(slug.like(slug_input).and(published.eq(true)))
@@ -142,7 +159,7 @@ pub fn get_raw_markdown(slug_input: &str, conn: &PgConnection) -> Result<Option<
 pub fn get_rendered_markdown(
     slug_input: &str,
     conn: &PgConnection,
-) -> Result<Option<GetPost>, DbError> {
+) -> Result<Option<GetPost>, AppError> {
     use schema::posts::dsl::{posts, published, slug};
     let post = posts
         .filter(slug.like(slug_input).and(published.eq(true)))
@@ -175,7 +192,7 @@ pub fn update_post(
     tags: &Option<Vec<String>>,
     intro: &Option<String>,
     conn: &PgConnection,
-) -> Result<models::Post, DbError> {
+) -> Result<models::Post, AppError> {
     use schema::posts::dsl::posts;
     let post = posts.find(slug_input).get_result::<Post>(conn)?;
 
@@ -227,7 +244,7 @@ pub fn get_all_posts(
     cursor: &i64,
     public: bool,
     conn: &PgConnection,
-) -> Result<Vec<models::ListPosts>, DbError> {
+) -> Result<Vec<models::ListPosts>, AppError> {
     use schema::posts::dsl::{created_at, posts, published};
     let res = if public {
         posts
@@ -250,7 +267,7 @@ pub fn get_posts_with_specific_tag(
     tag: &str,
     offset: &i64,
     conn: &PgConnection,
-) -> Result<Vec<models::ListPosts>, DbError> {
+) -> Result<Vec<models::ListPosts>, AppError> {
     use schema::posts::dsl::{created_at, posts, tags};
     let res = posts
         .filter(tags.contains(vec![tag.to_string()]))
@@ -261,7 +278,7 @@ pub fn get_posts_with_specific_tag(
     Ok(posts_to_listposts(res))
 }
 
-pub fn get_single_post(slug: &str, conn: &PgConnection) -> Result<models::Post, DbError> {
+pub fn get_single_post(slug: &str, conn: &PgConnection) -> Result<models::Post, AppError> {
     use schema::posts::dsl::posts;
     let res = posts.find(slug).get_result::<Post>(conn)?;
     Ok(res)
@@ -278,7 +295,7 @@ pub struct SubmitFeedbackInput {
 pub fn submit_feedback(
     feedback_input: SubmitFeedbackInput,
     conn: &PgConnection,
-) -> Result<bool, DbError> {
+) -> Result<bool, AppError> {
     use schema::feedback::table;
 
     let fb = Feedback {
@@ -291,17 +308,20 @@ pub fn submit_feedback(
     };
     diesel::insert_into(table).values(&fb).execute(conn)?;
     use schema::posts::dsl::posts;
-    use schema::posts::dsl::{thumbs_up, thumbs_down, id};
+    use schema::posts::dsl::{id, thumbs_down, thumbs_up};
     let target = posts.filter(id.eq(feedback_input.post_id));
     if feedback_input.thumbs_up {
-        diesel::update(target).set(thumbs_up.eq(thumbs_up + 1)).execute(conn)?;
+        diesel::update(target)
+            .set(thumbs_up.eq(thumbs_up + 1))
+            .execute(conn)?;
     } else {
-        diesel::update(target).set(thumbs_down.eq(thumbs_down + 1)).execute(conn)?;
+        diesel::update(target)
+            .set(thumbs_down.eq(thumbs_down + 1))
+            .execute(conn)?;
     };
 
     Ok(true)
 }
-
 
 pub fn post_feedback_to_publicfeedback(data: Vec<(Feedback, Option<Post>)>) -> Vec<PublicFeedback> {
     let mut result_vec: Vec<PublicFeedback> = Vec::new();
@@ -321,18 +341,21 @@ pub fn post_feedback_to_publicfeedback(data: Vec<(Feedback, Option<Post>)>) -> V
                 tags: post.tags,
                 title: post.title,
                 slug: post.slug,
-                intro: post.intro
-            }
+                intro: post.intro,
+            },
         })
-    };
+    }
     result_vec
 }
 
-pub fn get_last_x_feedback(limit: i64, conn: &PgConnection) -> Result<Vec<PublicFeedback>, DbError> {
+pub fn get_last_x_feedback(
+    limit: i64,
+    conn: &PgConnection,
+) -> Result<Vec<PublicFeedback>, AppError> {
     use schema::feedback::dsl::{created_at, post_id};
     use schema::feedback::table as fb_table;
+    use schema::posts::dsl::id;
     use schema::posts::table;
-    use schema::posts::dsl::{id};
     let res = fb_table
         .left_join(table.on(id.eq(post_id)))
         .order_by(created_at.desc())
@@ -341,15 +364,20 @@ pub fn get_last_x_feedback(limit: i64, conn: &PgConnection) -> Result<Vec<Public
     Ok(post_feedback_to_publicfeedback(res))
 }
 
-pub fn get_x_feedback_for_post(limit: i64, input_post_id: Uuid, conn: &PgConnection) -> Result<Vec<PublicFeedback>, DbError> {
+pub fn get_x_feedback_for_post(
+    limit: i64,
+    input_post_id: Uuid,
+    conn: &PgConnection,
+) -> Result<Vec<PublicFeedback>, AppError> {
     use schema::feedback::dsl::{created_at, post_id};
     use schema::feedback::table as fb_table;
+    use schema::posts::dsl::id;
     use schema::posts::table;
-    use schema::posts::dsl::{id};
     let res: Vec<(Feedback, Option<Post>)> = fb_table // SELECT * from feedback left join posts p on p.id = feedback.post_id where feedback_text = 'hallo welt'
         .left_join(table.on(id.eq(post_id)))
         .filter(post_id.eq(input_post_id))
-        .order_by(created_at.desc()).limit(limit)
+        .order_by(created_at.desc())
+        .limit(limit)
         .load::<(Feedback, Option<Post>)>(conn)?;
 
     Ok(post_feedback_to_publicfeedback(res))

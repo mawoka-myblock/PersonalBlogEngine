@@ -1,10 +1,10 @@
-use actix_identity::Identity;
-use crate::actions;
+use crate::actions::{self, AppError};
 use crate::DbPool;
-use actix_web::{post, get, web, Error, HttpRequest, HttpResponse};
+use actix_identity::Identity;
+use actix_web::{get, post, web, Error, HttpRequest, HttpResponse};
 use blake3;
+use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use serde::{Deserialize, Serialize};
-use regex::Regex;
 use uuid::Uuid;
 
 #[derive(Serialize, Deserialize)]
@@ -13,10 +13,6 @@ pub struct PostFeedbackInput {
     feedback: Option<String>,
     post_slug: String,
 }
-
-lazy_static! {
-        static ref RE: Regex = Regex::new(r#"(?m)DatabaseError\((.*), ".*"\)"#).unwrap();
-    }
 
 #[post("/")]
 pub async fn post_feedback(
@@ -45,27 +41,30 @@ pub async fn post_feedback(
             &conn,
         )
     })
-        .await?;
-    return match res {
-        Ok(_) => Ok(HttpResponse::Ok().finish()),
-        Err(e) => {
-            let err_str = format!("{:?}", e);
-            let re = &RE;
-            match re.captures(&*err_str) {
-                Some(l) => {
-                    let res = l.get(1).unwrap().as_str();
-                    return match res {
-                        "UniqueViolation" => Ok(HttpResponse::Conflict().finish()),
-                        _ => Ok(HttpResponse::Ok().finish())
-                    };
+    .await?;
+
+    res.map(|_ok| HttpResponse::Ok().finish())
+        .map_err(|err| match err {
+            AppError::QueryError(query_err) => match &query_err {
+                DieselError::DatabaseError(kind, _error_info) => {
+                    match kind {
+                        DatabaseErrorKind::UniqueViolation => {
+                            actix_web::error::ErrorConflict(query_err)
+                        }
+                        // TODO: map to more specific errors
+                        // => see here: https://docs.rs/actix-web/latest/actix_web/error/index.html#functions
+                        _ => actix_web::error::ErrorInternalServerError(query_err),
+                    }
                 }
-                None => match &*err_str {
-                    "NotFound" => return Ok(HttpResponse::NotFound().finish()),
-                    _ => panic!("{:?}", e)
-                }
-            };
-        }
-    };
+                DieselError::NotFound => actix_web::error::ErrorNotFound(query_err),
+                // TODO: map to more specific errors
+                // => see here: https://docs.rs/actix-web/latest/actix_web/error/index.html#functions
+                _ => actix_web::error::ErrorInternalServerError(query_err),
+            },
+            // TODO: map to more specific errors
+            // => see here: https://docs.rs/actix-web/latest/actix_web/error/index.html#functions
+            _ => actix_web::error::ErrorInternalServerError(err),
+        })
 }
 
 #[derive(Serialize, Deserialize)]
@@ -75,7 +74,11 @@ pub struct GetPostFeedbackQuery {
 }
 
 #[get("/post")]
-pub async fn get_feedback_from_post(query: web::Query<GetPostFeedbackQuery>, pool: web::Data<DbPool>, id: Identity) -> Result<HttpResponse, Error> {
+pub async fn get_feedback_from_post(
+    query: web::Query<GetPostFeedbackQuery>,
+    pool: web::Data<DbPool>,
+    id: Identity,
+) -> Result<HttpResponse, Error> {
     if id.identity().is_none() {
         return Ok(HttpResponse::Unauthorized().finish());
     };
@@ -83,8 +86,8 @@ pub async fn get_feedback_from_post(query: web::Query<GetPostFeedbackQuery>, poo
         let conn = pool.get()?;
         actions::get_x_feedback_for_post(query.limit, query.post_id, &conn)
     })
-        .await?
-        .map_err(actix_web::error::ErrorInternalServerError)?;
+    .await?
+    .map_err(actix_web::error::ErrorInternalServerError)?;
     Ok(HttpResponse::Ok().json(res))
 }
 
@@ -94,7 +97,11 @@ pub struct GetFeedbackQuery {
 }
 
 #[get("/")]
-pub async fn get_feedback_list(query: web::Query<GetFeedbackQuery>, pool: web::Data<DbPool>, id: Identity) -> Result<HttpResponse, Error> {
+pub async fn get_feedback_list(
+    query: web::Query<GetFeedbackQuery>,
+    pool: web::Data<DbPool>,
+    id: Identity,
+) -> Result<HttpResponse, Error> {
     if id.identity().is_none() {
         return Ok(HttpResponse::Unauthorized().finish());
     };
@@ -102,7 +109,7 @@ pub async fn get_feedback_list(query: web::Query<GetFeedbackQuery>, pool: web::D
         let conn = pool.get()?;
         actions::get_last_x_feedback(query.limit, &conn)
     })
-        .await?
-        .map_err(actix_web::error::ErrorInternalServerError)?;
+    .await?
+    .map_err(actix_web::error::ErrorInternalServerError)?;
     Ok(HttpResponse::Ok().json(res))
 }
