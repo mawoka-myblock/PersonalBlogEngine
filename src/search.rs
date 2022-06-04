@@ -1,4 +1,5 @@
-use crate::actions::DbError;
+use crate::actions::post_to_listpost;
+use crate::actions::AppError;
 use crate::models;
 use crate::models::ListPosts;
 use crate::schema::posts::dsl::{created_at, posts, slug};
@@ -13,7 +14,6 @@ use milli::update::{IndexDocuments, IndexDocumentsConfig, IndexerConfig};
 use milli::Search;
 use serde::{Deserialize, Serialize};
 use std::io::Cursor;
-use crate::actions::post_to_listpost;
 
 extern crate milli;
 
@@ -34,7 +34,7 @@ fn clean_html(input: &str) -> Result<String, String> {
     Err("Could not find text".to_string())
 }
 */
-pub fn search(term: &str, conn: &PgConnection) -> Result<Vec<ListPosts>, DbError> {
+pub fn search(term: &str, conn: &PgConnection) -> Result<Vec<ListPosts>, AppError> {
     let path = tempfile::tempdir().unwrap();
     let mut options = EnvOpenOptions::new();
     options.map_size(10 * 1024 * 1024); // 10 MB
@@ -101,8 +101,5 @@ pub fn search(term: &str, conn: &PgConnection) -> Result<Vec<ListPosts>, DbError
         .order_by(created_at.desc())
         .load::<models::Post>(conn)
         .unwrap();
-    Ok(res
-        .into_iter()
-        .map(post_to_listpost)
-        .collect())
+    Ok(res.into_iter().map(post_to_listpost).collect())
 }

@@ -16,16 +16,15 @@ dependencies = [
  "diesel",
  "diesel_migrations",
  "dotenv",
- "lazy_static",
  "markdown_to_text",
  "milli",
  "mime_guess",
  "rand_core 0.6.3",
- "regex",
  "rust-embed",
  "serde",
  "serde_json",
  "tempfile",
+ "thiserror",
  "uuid",
 ]
 
