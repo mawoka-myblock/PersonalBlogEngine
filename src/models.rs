@@ -40,7 +40,6 @@ pub struct User {
     pub password: String,
 }
 
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ListPosts {
     pub slug: String,
@@ -61,7 +60,7 @@ pub struct GetPost {
 }
 
 #[derive(
-Debug, Clone, Queryable, Serialize, Deserialize, AsChangeset, Insertable, Associations
+    Debug, Clone, Queryable, Serialize, Deserialize, AsChangeset, Insertable, Associations,
 )]
 // #[table_name = "posts"]
 #[belongs_to(foreign_key = id)]
@@ -73,7 +72,7 @@ pub struct Feedback {
     pub feedback_text: Option<String>,
     pub thumbs_up: bool,
     pub post_id: Uuid,
-    pub created_at: chrono::NaiveDateTime
+    pub created_at: chrono::NaiveDateTime,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Queryable)]
@@ -82,5 +81,5 @@ pub struct PublicFeedback {
     pub thumbs_up: bool,
     pub post: ListPosts,
     pub feedback_text: Option<String>,
-    pub created_at: chrono::NaiveDateTime
+    pub created_at: chrono::NaiveDateTime,
 }

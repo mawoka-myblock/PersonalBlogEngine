@@ -37,7 +37,6 @@ export class PBE {
         this.api_url = api_url;
     }
 
-
     /**
      * It takes a slug and a boolean, and returns a promise that resolves to a PostData object or an Error object
      * @param {string} slug - The slug of the post you want to get.
@@ -50,7 +49,6 @@ export class PBE {
             const res = await axios.get(
                 raw
                     ? `${this.api_url}/api/v1/public/raw`
-
                     : `${this.api_url}/api/v1/public/rendered`,
                 {
                     params: {
@@ -148,9 +146,7 @@ export class PBE {
      * @param {string} query - The query string to search for.
      * @returns An array of Metadata objects or an Error object.
      */
-    async search(
-        query: string,
-    ): Promise<Array<Metadata | null> | Error> {
+    async search(query: string): Promise<Array<Metadata | null> | Error> {
         try {
             const res = await axios.get(
                 `${this.api_url}/api/v1/public/search`,
@@ -184,15 +180,15 @@ export class PBE {
     async submit_feedback(
         thumbs_up: boolean,
         post_slug: string,
-        feedback?: string,
+        feedback?: string
     ): Promise<null | Error> {
         try {
             await axios.post(`${this.api_url}/api/v1/feedback/`, {
                 thumbs_up: thumbs_up,
                 post_slug: post_slug,
-                feedback: feedback
-            })
-            return null
+                feedback: feedback,
+            });
+            return null;
         } catch (error) {
             if (error.response) {
                 return {

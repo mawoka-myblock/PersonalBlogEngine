@@ -1,4 +1,4 @@
-import {isError, PBE} from ".";
+import { isError, PBE } from ".";
 
 const post_slug = "test";
 describe("pbe", () => {
@@ -52,26 +52,26 @@ describe("pbe", () => {
         }
     });
     test("Submit Feedback", async () => {
-        const res = await pbe.submit_feedback(true, post_slug, "lol")
-        console.log(res)
+        const res = await pbe.submit_feedback(true, post_slug, "lol");
+        console.log(res);
         if (res !== null) {
             throw new Error("Failed");
         }
-    })
+    });
     test("Submit Feedback Not Found", async () => {
-        const res = await pbe.submit_feedback(true, "post_slug")
+        const res = await pbe.submit_feedback(true, "post_slug");
         if (isError(res)) {
-            expect(res.http_status_code).toBe(404)
+            expect(res.http_status_code).toBe(404);
         } else {
             throw new Error("Failed");
         }
-    })
+    });
     test("Submit Feedback Not Found", async () => {
-        const res = await pbe.submit_feedback(true, post_slug)
+        const res = await pbe.submit_feedback(true, post_slug);
         if (isError(res)) {
-            expect(res.http_status_code).toBe(409)
+            expect(res.http_status_code).toBe(409);
         } else {
             throw new Error("Failed");
         }
-    })
+    });
 });

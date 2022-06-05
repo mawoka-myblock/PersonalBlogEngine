@@ -27,6 +27,7 @@ pub async fn post_feedback(
     };
 
     let ip_hash = blake3::hash(ip_addr.as_ref()).as_bytes().to_vec();
+    drop(conn_info);
     let res = web::block(move || {
         let conn = pool.get()?;
         let post = actions::get_single_post(&*data.0.post_slug, &conn)?;
@@ -46,15 +47,13 @@ pub async fn post_feedback(
     res.map(|_ok| HttpResponse::Ok().finish())
         .map_err(|err| match err {
             AppError::QueryError(query_err) => match &query_err {
-                DieselError::DatabaseError(kind, _error_info) => {
-                    match kind {
-                        DatabaseErrorKind::UniqueViolation => {
-                            actix_web::error::ErrorConflict(query_err)
-                        }
-                        // TODO: map to more specific errors
-                        // => see here: https://docs.rs/actix-web/latest/actix_web/error/index.html#functions
-                        _ => actix_web::error::ErrorInternalServerError(query_err),
-                    }
+                DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _error_info) => {
+                    actix_web::error::ErrorConflict(query_err)
+                }
+                DieselError::DatabaseError(_kind, _error_info) => {
+                    // TODO: map to more specific errors
+                    // => see here: https://docs.rs/actix-web/latest/actix_web/error/index.html#functions
+                    actix_web::error::ErrorInternalServerError(query_err)
                 }
                 DieselError::NotFound => actix_web::error::ErrorNotFound(query_err),
                 // TODO: map to more specific errors
