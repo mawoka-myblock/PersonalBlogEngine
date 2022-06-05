@@ -47,7 +47,9 @@ async fn main() -> std::io::Result<()> {
         let policy = CookieIdentityPolicy::new(&[0; 32])
             .name("auth-cookie")
             .secure(false);
-        let cors = Cors::default().allow_any_origin().allowed_methods(vec!["GET", "POST", "OPTIONS"]);
+        let cors = Cors::default()
+            .allow_any_origin()
+            .allow_any_method();
 
         App::new()
             /*            .wrap(
