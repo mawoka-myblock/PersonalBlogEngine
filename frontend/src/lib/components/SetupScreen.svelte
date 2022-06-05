@@ -1,14 +1,20 @@
 <script lang="ts">
     import * as yup from "yup";
-    import {setupCompleted} from "../stores"
+    import { setupCompleted } from "../stores";
 
     let setupData = {
         email: "",
         password: "",
-    }
+    };
     const registerSchema = yup.object({
-        email: yup.string().email("The email isn't valid.").required("An email is required."),
-        password: yup.string().min(6, "The password must be at least 6 characters.").required("A password is required.")
+        email: yup
+            .string()
+            .email("The email isn't valid.")
+            .required("An email is required."),
+        password: yup
+            .string()
+            .min(6, "The password must be at least 6 characters.")
+            .required("A password is required."),
     });
     const completeSetup = async () => {
         if (!(await registerSchema.isValid(setupData))) {
@@ -17,21 +23,21 @@
         const res = await fetch("/api/v1/manage/setup", {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             },
-            body: JSON.stringify(setupData)
-        })
+            body: JSON.stringify(setupData),
+        });
         if (res.status === 200) {
-            setupCompleted.set(true)
+            setupCompleted.set(true);
         }
-    }
-    let yupErrorMessage = '';
+    };
+    let yupErrorMessage = "";
     let inputValid = false;
     const validateInput = async (data) => {
         try {
-            await registerSchema.validate(data, {abortEarly: false});
+            await registerSchema.validate(data, { abortEarly: false });
             inputValid = true;
-            yupErrorMessage = '';
+            yupErrorMessage = "";
         } catch (err) {
             inputValid = false;
             yupErrorMessage = err.errors[0];
@@ -45,24 +51,37 @@
         <label class="block text-gray-800 text-sm font-bold mb-2" for="email">
             E-Mail
         </label>
-        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-800" id="email" type="text"
-               bind:value={setupData.email}
-               placeholder="E-Mail">
+        <input
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-800"
+            id="email"
+            type="text"
+            bind:value={setupData.email}
+            placeholder="E-Mail"
+        />
     </div>
     <div class="mb-6">
-        <label class="block text-grey-darker text-sm font-bold mb-2" for="password">
+        <label
+            class="block text-grey-darker text-sm font-bold mb-2"
+            for="password"
+        >
             Password
         </label>
-        <input class="shadow appearance-none border border-red rounded w-full py-2 px-3 text-gray-800 mb-3"
-               bind:value={setupData.password}
-               id="password" type="password" placeholder="******************">
+        <input
+            class="shadow appearance-none border border-red rounded w-full py-2 px-3 text-gray-800 mb-3"
+            bind:value={setupData.password}
+            id="password"
+            type="password"
+            placeholder="******************"
+        />
         <!--        <p class="text-red text-xs italic">Please choose a password.</p>-->
     </div>
     <div class="flex items-center justify-between">
-        <button class="bg-blue-700 hover:bg-blue-dark text-white font-bold py-2 px-4 rounded disabled:opacity-60"
-                type="button"
-                disabled={!inputValid}
-                on:click={completeSetup}>
+        <button
+            class="bg-blue-700 hover:bg-blue-dark text-white font-bold py-2 px-4 rounded disabled:opacity-60"
+            type="button"
+            disabled={!inputValid}
+            on:click={completeSetup}
+        >
             Setup!
         </button>
     </div>

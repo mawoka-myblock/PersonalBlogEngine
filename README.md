@@ -44,10 +44,7 @@ That's it.
     4. Enter your email-address (doesn't have to be valid) and your password and press `SETUP`.
     5. Log in with your email and password
 2. Integrate it into the frontend
-
-   The docs are living [here](https://mawoka-myblock.github.io/PersonalBlogEngine/#tag--Public). You can call the
-   endpoints under the `public`-tag. The responses are also defined in the docs.
-   **Highlight.js** works out of the box. (You still have to execute it)
+    Use the TypeScipt library [@mawoka/pbe](https://www.npmjs.com/package/@mawoka/pbe).
 3. Create your first post
     1. Go to your admin-page `https://test.com/admin/` and log in if you aren't already
     2. Click on `Create new post` and enter the slug of your new post. Note: **You won't be able to change the slug
