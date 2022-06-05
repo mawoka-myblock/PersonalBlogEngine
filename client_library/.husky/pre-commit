@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+cd client_library
+if test -f "/home/mawoka/.local/share/pnpm/pnpm"; then
+  /home/mawoka/.local/share/pnpm/pnpm lint --fix
+else
+  pnpm lint --fix
+fi
