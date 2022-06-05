@@ -31,4 +31,4 @@ if (isError(post)) {
     }
 }
 ```
-3. Look at the [docs]()
+3. Look at the [API docs](https://pbe-docs.netlify.app/classes/pbe)
