@@ -73,6 +73,7 @@
             body: JSON.stringify(post),
         });
         const resBody = await res.text();
+        originalPostSringified = resBody
         if (res.status !== 200) {
             if (resBody === "NotFound") {
                 const resp = await fetch("/api/v1/manage/create_post", {
