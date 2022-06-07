@@ -82,14 +82,12 @@
                 body: JSON.stringify(post),
             });
             if (resp.status !== 200) {
-                console.log("Here");
                 alert("Couldn't save post!");
                 saveButtonStatus = SaveButtonStatus.Error;
                 return;
             }
         } else {
             if (res.status !== 200) {
-                console.log("thgere");
                 alert("Couldn't save post!");
                 saveButtonStatus = SaveButtonStatus.Error;
                 return;
