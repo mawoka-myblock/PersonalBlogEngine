@@ -53,4 +53,6 @@ That's it.
        from the save-button, but it works.
 4. Done!
 
+## JS-Client
+[![@mawoka/pbe Versions](https://badges.openbase.com/js/versions/@mawoka/pbe.svg?token=75ivDorDMcATsHiIzI/rQUhOqSfXIeJqEVV8EBvcMLM=)](https://openbase.com/js/@mawoka/pbe?utm_source=embedded&amp;utm_medium=badge&amp;utm_campaign=rate-badge)
     
