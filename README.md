@@ -52,7 +52,4 @@ That's it.
     3. Enter a title, an intro and your markdown. After that, click `save`. Note: For now, you won't get any feedback
        from the save-button, but it works.
 4. Done!
-
-## JS-Client
-[![@mawoka/pbe Versions](https://badges.openbase.com/js/versions/@mawoka/pbe.svg?token=75ivDorDMcATsHiIzI/rQUhOqSfXIeJqEVV8EBvcMLM=)](https://openbase.com/js/@mawoka/pbe?utm_source=embedded&amp;utm_medium=badge&amp;utm_campaign=rate-badge)
     
