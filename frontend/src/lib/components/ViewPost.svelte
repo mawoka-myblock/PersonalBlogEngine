@@ -59,6 +59,16 @@
             return null;
         }
     };
+    const deletePost = async () => {
+        if (!confirm("Are you sure you want to delete this post for EVER?")) {
+            return;
+        }
+        await fetch(`/api/v1/manage/post?slug=${postSelected}`, {
+            method: "DELETE",
+        });
+        postSelected = null;
+    };
+
     const savePost = async (): Promise<void> => {
         saveButtonStatus = SaveButtonStatus.Loading;
         if (!(await postSchema.isValid(post))) {
@@ -403,6 +413,12 @@
                 </div>
             </div>
             <svelte:component this={c.default} bind:value={post.content} />
+            <div class="flex justify-center">
+                <button
+                    class="rounded-lg p-1 bg-red-600 text-white transition hover:bg-red-700 mt-8"
+                    on:click={deletePost}>Delete Post</button
+                >
+            </div>
         {/await}
     {/await}
 </div>
