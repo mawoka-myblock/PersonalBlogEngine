@@ -19,7 +19,7 @@ extern crate diesel_migrations;
 use actix_cors::Cors;
 use actix_identity::{CookieIdentityPolicy, IdentityService};
 use actix_web::{web, App, HttpServer};
-use diesel::prelude::*;
+use diesel::prelude::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel_migrations::embed_migrations;
 
@@ -86,8 +86,8 @@ async fn main() -> std::io::Result<()> {
                             .service(routes::public::get_rendered_markdown) // GET rendered?slug=slug
                             .service(routes::public::get_raw_markdown) // GET raw?slug=slug
                             .service(routes::public::get_posts) // GET post?offset=0
-                            .service(routes::public::get_posts_with_tag) // GET post/{tag}?offset=0
-                            .service(routes::public::search_posts), // GET search?q=query
+                            .service(routes::public::get_posts_with_tag), // GET post/{tag}?offset=0
+                                                                          //  .service(routes::public::search_posts), // GET search?q=query
                     )
                     .service(
                         web::scope("/feedback")
@@ -101,6 +101,7 @@ async fn main() -> std::io::Result<()> {
                     .service(routes::dashboard::index)
                     .service(routes::dashboard::dist),
             )
+            .service(routes::dashboard::admin_index)
     })
     .bind(("0.0.0.0", 8080))?
     .run()
