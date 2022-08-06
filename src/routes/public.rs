@@ -93,7 +93,7 @@ pub struct SearchResult {
     pub slug: String,
     pub intro: String,
     pub title: String,
-    pub tags: Vec<String>
+    pub tags: Vec<String>,
 }
 
 #[get("/search")]
@@ -128,7 +128,13 @@ pub async fn search_posts(
             slug: vals[0].value.as_text().unwrap().parse().unwrap(),
             intro: vals[1].value.as_text().unwrap().parse().unwrap(),
             title: vals[2].value.as_text().unwrap().parse().unwrap(),
-            tags: vals[3].value.as_text().unwrap().split(',').map(String::from).collect()
+            tags: vals[3]
+                .value
+                .as_text()
+                .unwrap()
+                .split(',')
+                .map(String::from)
+                .collect(),
         })
     }
 

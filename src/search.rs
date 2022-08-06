@@ -40,7 +40,6 @@ pub fn initialize_index(index: &Index, conn: &PgConnection) {
     let tags = schema.get_field("tags").unwrap();
     let body = schema.get_field("body").unwrap();
 
-
     for post in res {
         index_writer
             .add_document(doc!(
