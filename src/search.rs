@@ -1,14 +1,16 @@
+use std::sync::Mutex;
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
 use tantivy::schema::*;
 use tantivy::Index;
 use tantivy::ReloadPolicy;
+use tempfile::TempDir;
 
 use markdown_to_text;
 
-use crate::models;
 use crate::schema::posts::dsl::{created_at, posts};
 use crate::schema::posts::published;
+use crate::{models, SearchData};
 use diesel::prelude::*;
 use diesel::{ExpressionMethods, PgConnection, QueryDsl};
 
@@ -54,4 +56,20 @@ pub fn initialize_index(index: &Index, conn: &PgConnection) {
     }
 
     index_writer.commit().unwrap();
+}
+
+pub fn update_index(conn: &PgConnection, search_data: actix_web::web::Data<Mutex<SearchData>>) {
+    //.map_err(actix_web::error::ErrorConflict)?;
+    let mut s_data = search_data.lock().unwrap();
+    let index_path = TempDir::new().unwrap();
+    s_data.index = Index::create_in_dir(&index_path, get_schema()).unwrap();
+    initialize_index(&s_data.index, &conn);
+    let reader = s_data
+        .index
+        .reader_builder()
+        .reload_policy(ReloadPolicy::OnCommit)
+        .try_into()
+        .unwrap();
+
+    s_data.searcher = reader.searcher();
 }

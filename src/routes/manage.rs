@@ -1,15 +1,22 @@
 use actix_identity::Identity;
 use actix_web::{delete, get, post, put, web, Error, HttpResponse};
 use serde::Deserialize;
+use std::sync::Mutex;
+use tantivy::schema::Schema;
+use tantivy::{Index, LeasedItem, ReloadPolicy, Searcher};
+use tempfile::TempDir;
 
-use crate::actions;
 use crate::models::NewPost;
+use crate::search::update_index;
 use crate::DbPool;
+use crate::{actions, get_schema, initialize_index, SearchData};
 
 #[post("/create_post")]
 pub async fn create_post(
     pool: web::Data<DbPool>,
+    pool2: web::Data<DbPool>,
     data: web::Json<NewPost>,
+    search_data: web::Data<Mutex<SearchData>>,
     id: Identity,
 ) -> Result<HttpResponse, Error> {
     if id.identity().is_none() {
@@ -21,6 +28,12 @@ pub async fn create_post(
     })
     .await?
     .map_err(actix_web::error::ErrorConflict)?;
+
+    let conn = web::block(move || pool2.get())
+        .await?
+        .map_err(actix_web::error::ErrorConflict)?;
+
+    update_index(&conn, search_data);
     Ok(HttpResponse::Ok().json(user))
 }
 
@@ -126,7 +139,9 @@ pub struct UpdatePost {
 #[put("/update")]
 pub async fn update_post(
     pool: web::Data<DbPool>,
+    pool2: web::Data<DbPool>,
     data: web::Json<UpdatePost>,
+    search_data: web::Data<Mutex<SearchData>>,
     id: Identity,
 ) -> Result<HttpResponse, Error> {
     if id.identity().is_none() {
@@ -146,6 +161,13 @@ pub async fn update_post(
     })
     .await?
     .map_err(actix_web::error::ErrorConflict)?;
+
+    let conn = web::block(move || pool2.get())
+        .await?
+        .map_err(actix_web::error::ErrorConflict)?;
+
+    update_index(&conn, search_data);
+
     Ok(HttpResponse::Ok().json(user))
 }
 

@@ -1,3 +1,4 @@
+use std::sync::Mutex;
 // use crate::search::search;
 use actix_web::{get, web, Error, HttpResponse};
 use serde::Deserialize;
@@ -6,7 +7,7 @@ use tantivy::query::QueryParser;
 use tantivy::schema::Schema;
 use tantivy::{Index, LeasedItem, Searcher};
 
-use crate::{actions, DbPool};
+use crate::{actions, DbPool, SearchData};
 
 #[derive(Deserialize)]
 pub struct Query {
@@ -99,42 +100,45 @@ pub struct SearchResult {
 #[get("/search")]
 pub async fn search_posts(
     query_input: web::Query<SearchQuery>,
-    index: web::Data<Index>,
-    searcher: web::Data<LeasedItem<Searcher>>,
-    schema: web::Data<Schema>,
+    data: web::Data<Mutex<SearchData>>,
 ) -> Result<HttpResponse, Error> {
-    let slug = schema.get_field("slug").unwrap();
-    let intro = schema.get_field("intro").unwrap();
-    let title = schema.get_field("title").unwrap();
-    let body = schema.get_field("body").unwrap();
+    let mut data2 = data.lock().unwrap();
+    let slug = data2.schema.get_field("slug").unwrap();
+    let intro = data2.schema.get_field("intro").unwrap();
+    let title = data2.schema.get_field("title").unwrap();
+    let body = data2.schema.get_field("body").unwrap();
 
-    let query_parser = QueryParser::for_index(&index, vec![title, body, slug, intro]);
+    let query_parser = QueryParser::for_index(&data2.index, vec![title, body, slug, intro]);
     let query = query_parser
         .parse_query(&*query_input.query)
         .map_err(actix_web::error::ErrorBadRequest)?;
-    let top_docs = searcher
+    let top_docs = data2
+        .searcher
         .search(&query, &TopDocs::with_limit(10))
         .map_err(actix_web::error::ErrorInternalServerError)
         .unwrap();
 
     let mut res_vec: Vec<SearchResult> = Vec::new();
     for (_score, doc_address) in top_docs {
-        let retrieved_doc = searcher
+        let retrieved_doc = data2
+            .searcher
             .doc(doc_address)
             .map_err(actix_web::error::ErrorInternalServerError)?;
         let vals = retrieved_doc.field_values();
 
+        let mut tags = vals[3].value.as_text().unwrap();
+
+        let final_tags: Vec<String>;
+        if tags == "" {
+            final_tags = Vec::new();
+        } else {
+            final_tags = tags.split(',').map(String::from).collect()
+        }
         res_vec.push(SearchResult {
             slug: vals[0].value.as_text().unwrap().parse().unwrap(),
             intro: vals[1].value.as_text().unwrap().parse().unwrap(),
             title: vals[2].value.as_text().unwrap().parse().unwrap(),
-            tags: vals[3]
-                .value
-                .as_text()
-                .unwrap()
-                .split(',')
-                .map(String::from)
-                .collect(),
+            tags: final_tags,
         })
     }
 
