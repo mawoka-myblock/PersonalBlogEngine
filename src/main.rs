@@ -18,16 +18,16 @@ extern crate diesel_migrations;
 #[macro_use]
 extern crate tantivy;
 
+use crate::search::{get_schema, initialize_index};
 use actix_cors::Cors;
 use actix_identity::{CookieIdentityPolicy, IdentityService};
-use actix_web::{web, App, HttpServer};
 use actix_web::web::service;
+use actix_web::{web, App, HttpServer};
 use diesel::prelude::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel_migrations::embed_migrations;
 use tantivy::{Index, ReloadPolicy};
 use tempfile::TempDir;
-use crate::search::{get_schema, initialize_index};
 
 pub type DbPool = Pool<ConnectionManager<PgConnection>>;
 
@@ -58,7 +58,8 @@ async fn main() -> std::io::Result<()> {
         let reader = index
             .reader_builder()
             .reload_policy(ReloadPolicy::OnCommit)
-            .try_into().unwrap();
+            .try_into()
+            .unwrap();
 
         let searcher = reader.searcher();
         App::new()
@@ -115,7 +116,7 @@ async fn main() -> std::io::Result<()> {
             )
         // .service(routes::dashboard::admin_index)
     })
-        .bind(("0.0.0.0", 8080))?
-        .run()
-        .await
+    .bind(("0.0.0.0", 8080))?
+    .run()
+    .await
 }

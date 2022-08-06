@@ -6,12 +6,11 @@ use tantivy::ReloadPolicy;
 
 use markdown_to_text;
 
+use crate::models;
 use crate::schema::posts::dsl::{created_at, posts};
 use crate::schema::posts::published;
 use diesel::prelude::*;
-use crate::models;
 use diesel::{ExpressionMethods, PgConnection, QueryDsl};
-
 
 pub fn get_schema() -> Schema {
     let mut schema_builder = Schema::builder();
@@ -40,12 +39,14 @@ pub fn initialize_index(index: &Index, conn: &PgConnection) {
     let body = schema.get_field("body").unwrap();
 
     for post in res {
-        index_writer.add_document(doc!(
-            slug => post.slug,
-            intro => post.intro,
-            title => post.title,
-            body => &*markdown_to_text::convert(&post.content)
-        )).unwrap();
+        index_writer
+            .add_document(doc!(
+                slug => post.slug,
+                intro => post.intro,
+                title => post.title,
+                body => &*markdown_to_text::convert(&post.content)
+            ))
+            .unwrap();
     }
 
     index_writer.commit().unwrap();
