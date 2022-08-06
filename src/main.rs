@@ -23,7 +23,7 @@ extern crate tantivy;
 use crate::search::{get_schema, initialize_index};
 use actix_cors::Cors;
 use actix_identity::{CookieIdentityPolicy, IdentityService};
-use actix_web::web::{service, Data};
+use actix_web::web::Data;
 use actix_web::{web, App, HttpServer};
 use diesel::prelude::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool};

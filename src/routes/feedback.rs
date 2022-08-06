@@ -20,14 +20,12 @@ pub async fn post_feedback(
     data: web::Json<PostFeedbackInput>,
     pool: web::Data<DbPool>,
 ) -> Result<HttpResponse, Error> {
-    let conn_info = req.connection_info();
-    let ip_addr = match conn_info.realip_remote_addr() {
+    let ip_addr = match req.connection_info().realip_remote_addr() {
         Some(i) => i.to_string(),
         None => return Ok(HttpResponse::BadRequest().body("No IP-address could be extracted.")),
     };
 
     let ip_hash = blake3::hash(ip_addr.as_ref()).as_bytes().to_vec();
-    drop(conn_info);
     let res = web::block(move || {
         let conn = pool.get()?;
         let post = actions::get_single_post(&*data.0.post_slug, &conn)?;

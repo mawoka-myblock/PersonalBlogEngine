@@ -4,8 +4,6 @@ use actix_web::{get, web, Error, HttpResponse};
 use serde::Deserialize;
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
-use tantivy::schema::Schema;
-use tantivy::{Index, LeasedItem, Searcher};
 
 use crate::{actions, DbPool, SearchData};
 
@@ -102,7 +100,7 @@ pub async fn search_posts(
     query_input: web::Query<SearchQuery>,
     data: web::Data<Mutex<SearchData>>,
 ) -> Result<HttpResponse, Error> {
-    let mut data2 = data.lock().unwrap();
+    let data2 = data.lock().unwrap();
     let slug = data2.schema.get_field("slug").unwrap();
     let intro = data2.schema.get_field("intro").unwrap();
     let title = data2.schema.get_field("title").unwrap();
@@ -126,14 +124,13 @@ pub async fn search_posts(
             .map_err(actix_web::error::ErrorInternalServerError)?;
         let vals = retrieved_doc.field_values();
 
-        let mut tags = vals[3].value.as_text().unwrap();
+        let tags = vals[3].value.as_text().unwrap();
 
-        let final_tags: Vec<String>;
-        if tags == "" {
-            final_tags = Vec::new();
+        let final_tags: Vec<String> = if tags.is_empty() {
+            Vec::new()
         } else {
-            final_tags = tags.split(',').map(String::from).collect()
-        }
+            tags.split(',').map(String::from).collect()
+        };
         res_vec.push(SearchResult {
             slug: vals[0].value.as_text().unwrap().parse().unwrap(),
             intro: vals[1].value.as_text().unwrap().parse().unwrap(),

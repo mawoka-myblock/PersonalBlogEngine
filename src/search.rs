@@ -1,6 +1,4 @@
 use std::sync::Mutex;
-use tantivy::collector::TopDocs;
-use tantivy::query::QueryParser;
 use tantivy::schema::*;
 use tantivy::Index;
 use tantivy::ReloadPolicy;
@@ -63,7 +61,7 @@ pub fn update_index(conn: &PgConnection, search_data: actix_web::web::Data<Mutex
     let mut s_data = search_data.lock().unwrap();
     let index_path = TempDir::new().unwrap();
     s_data.index = Index::create_in_dir(&index_path, get_schema()).unwrap();
-    initialize_index(&s_data.index, &conn);
+    initialize_index(&s_data.index, conn);
     let reader = s_data
         .index
         .reader_builder()

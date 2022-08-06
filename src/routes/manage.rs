@@ -2,14 +2,11 @@ use actix_identity::Identity;
 use actix_web::{delete, get, post, put, web, Error, HttpResponse};
 use serde::Deserialize;
 use std::sync::Mutex;
-use tantivy::schema::Schema;
-use tantivy::{Index, LeasedItem, ReloadPolicy, Searcher};
-use tempfile::TempDir;
 
 use crate::models::NewPost;
 use crate::search::update_index;
 use crate::DbPool;
-use crate::{actions, get_schema, initialize_index, SearchData};
+use crate::{actions, SearchData};
 
 #[post("/create_post")]
 pub async fn create_post(
