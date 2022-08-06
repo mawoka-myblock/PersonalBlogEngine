@@ -17,6 +17,7 @@ pub fn get_schema() -> Schema {
     schema_builder.add_text_field("slug", TEXT | STORED);
     schema_builder.add_text_field("intro", TEXT | STORED);
     schema_builder.add_text_field("title", TEXT | STORED);
+    schema_builder.add_text_field("tags", TEXT | STORED);
     schema_builder.add_text_field("body", TEXT);
 
     schema_builder.build()
@@ -36,7 +37,9 @@ pub fn initialize_index(index: &Index, conn: &PgConnection) {
     let slug = schema.get_field("slug").unwrap();
     let intro = schema.get_field("intro").unwrap();
     let title = schema.get_field("title").unwrap();
+    let tags = schema.get_field("tags").unwrap();
     let body = schema.get_field("body").unwrap();
+
 
     for post in res {
         index_writer
@@ -44,7 +47,9 @@ pub fn initialize_index(index: &Index, conn: &PgConnection) {
                 slug => post.slug,
                 intro => post.intro,
                 title => post.title,
-                body => &*markdown_to_text::convert(&post.content)
+                tags => post.tags.join(","),
+                body => &*markdown_to_text::convert(&post.content),
+
             ))
             .unwrap();
     }

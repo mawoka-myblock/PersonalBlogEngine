@@ -26,6 +26,7 @@ export interface SearchResult {
     slug: string;
     title: string;
     intro: string;
+    tags: string[];
 }
 
 export const isError = (input: any | Error): input is Error => {
