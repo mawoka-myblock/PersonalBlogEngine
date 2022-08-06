@@ -15,13 +15,19 @@ extern crate diesel;
 extern crate dotenv;
 #[macro_use]
 extern crate diesel_migrations;
+#[macro_use]
+extern crate tantivy;
 
 use actix_cors::Cors;
 use actix_identity::{CookieIdentityPolicy, IdentityService};
 use actix_web::{web, App, HttpServer};
+use actix_web::web::service;
 use diesel::prelude::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel_migrations::embed_migrations;
+use tantivy::{Index, ReloadPolicy};
+use tempfile::TempDir;
+use crate::search::{get_schema, initialize_index};
 
 pub type DbPool = Pool<ConnectionManager<PgConnection>>;
 
@@ -29,15 +35,7 @@ embed_migrations!();
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv::dotenv().ok();
-    // env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
-    // let conn_spec = std::env::var("DATABASE_URL").expect("DATABASE_URL");
-    // let manager = ConnectionManager::<SqliteConnection>::new(conn_spec);
-    /*    let pool = r2d2::Pool::builder()
-    .build(manager)
-    .expect("Failed to create pool.");*/
-    // let private_key = actix_web::cookie::Key::generate();
-    // let redis_uri = std::env::var("REDIS_URL").expect("REDIS_URL");
     let pool = db::get_pool();
 
     let conn = pool.get().unwrap();
@@ -52,6 +50,17 @@ async fn main() -> std::io::Result<()> {
             .allow_any_method()
             .allow_any_header();
 
+        let index_path = TempDir::new().unwrap();
+        let index = Index::create_in_dir(&index_path, get_schema()).unwrap();
+        let schema = get_schema();
+        initialize_index(&index, &pool.get().unwrap());
+
+        let reader = index
+            .reader_builder()
+            .reload_policy(ReloadPolicy::OnCommit)
+            .try_into().unwrap();
+
+        let searcher = reader.searcher();
         App::new()
             /*            .wrap(
                 SessionMiddleware::new(
@@ -62,6 +71,9 @@ async fn main() -> std::io::Result<()> {
             .wrap(IdentityService::new(policy))
             // .wrap(middleware::Logger::default())
             .app_data(web::Data::new(pool.clone()))
+            .app_data(web::Data::new(index))
+            .app_data(web::Data::new(searcher))
+            .app_data(web::Data::new(schema))
             .wrap(cors)
             .service(
                 web::scope("/api/v1")
@@ -86,8 +98,8 @@ async fn main() -> std::io::Result<()> {
                             .service(routes::public::get_rendered_markdown) // GET rendered?slug=slug
                             .service(routes::public::get_raw_markdown) // GET raw?slug=slug
                             .service(routes::public::get_posts) // GET post?offset=0
-                            .service(routes::public::get_posts_with_tag), // GET post/{tag}?offset=0
-                                                                          //  .service(routes::public::search_posts), // GET search?q=query
+                            .service(routes::public::get_posts_with_tag) // GET post/{tag}?offset=0
+                            .service(routes::public::search_posts), // GET search?q=query
                     )
                     .service(
                         web::scope("/feedback")
@@ -101,9 +113,9 @@ async fn main() -> std::io::Result<()> {
                     .service(routes::dashboard::index)
                     .service(routes::dashboard::dist),
             )
-            .service(routes::dashboard::admin_index)
+        // .service(routes::dashboard::admin_index)
     })
-    .bind(("0.0.0.0", 8080))?
-    .run()
-    .await
+        .bind(("0.0.0.0", 8080))?
+        .run()
+        .await
 }

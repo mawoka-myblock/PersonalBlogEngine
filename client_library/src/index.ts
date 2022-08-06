@@ -22,6 +22,12 @@ export interface Metadata {
     thumbs_down: number;
 }
 
+export interface SearchResult {
+    slug: string;
+    title: string;
+    intro: string;
+}
+
 export const isError = (input: any | Error): input is Error => {
     return (<Error>input).http_status_code !== undefined;
 };
@@ -146,7 +152,7 @@ export class PBE {
      * @param {string} query - The query string to search for.
      * @returns An array of Metadata objects or an Error object.
      */
-    async search(query: string): Promise<Array<Metadata | null> | Error> {
+    async search(query: string): Promise<Array<SearchResult | null> | Error> {
         try {
             const res = await axios.get(
                 `${this.api_url}/api/v1/public/search`,

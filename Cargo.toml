@@ -16,7 +16,7 @@ actix-identity = "0.4"
 argon2 = {version = "0.3", features = ["std"] }
 rand_core = { version = "0.6", features = ["std"] }
 comrak = "0.12"
-milli = { git = "https://github.com/meilisearch/milli", rev = "6ee67df128b63f40eedfe1cb2edfa1a59492e310"} # https://github.com/meilisearch/milli/releases/tag/v0.26.4
+tantivy = "0.18.0"
 tempfile = "3.3"
 rust-embed = {version = "6.4", features = ["actix", "interpolate-folder-path"]}
 mime_guess = "2.0"
