@@ -27,10 +27,20 @@ table! {
 }
 
 table! {
+    uploads (id) {
+        id -> Uuid,
+        data -> Bytea,
+        date_added -> Timestamp,
+        mime_type -> Nullable<Text>,
+        file_name -> Nullable<Text>,
+    }
+}
+
+table! {
     users (email) {
         email -> Varchar,
         password -> Varchar,
     }
 }
 
-allow_tables_to_appear_in_same_query!(feedback, posts, users,);
+allow_tables_to_appear_in_same_query!(feedback, posts, uploads, users,);

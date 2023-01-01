@@ -22,6 +22,7 @@ extern crate tantivy;
 
 use crate::search::{get_schema, initialize_index};
 use actix_cors::Cors;
+use actix_form_data::{Error, Field, Form};
 use actix_identity::{CookieIdentityPolicy, IdentityService};
 use actix_web::web::Data;
 use actix_web::{web, App, HttpServer};
@@ -122,6 +123,14 @@ async fn main() -> std::io::Result<()> {
                                     .service(routes::feedback::post_feedback) // POST /
                                     .service(routes::feedback::get_feedback_from_post) // GET /post?limit=Int&post_id=UUID
                                     .service(routes::feedback::get_feedback_list), // GET /?limit=Int
+                            )
+                            .service(
+                                web::scope("/uploads")
+                                    .service(routes::uploads::list_files) // GET /list?offset=int
+                                    .service(routes::uploads::upload_file) // POST /
+                                    .service(routes::uploads::get_file) // GET /{file_id}
+                                    .service(routes::uploads::delete_file) // DELETE /{file_id}
+
                             ),
                     )
                     .service(

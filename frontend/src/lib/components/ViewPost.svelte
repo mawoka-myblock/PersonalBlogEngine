@@ -75,7 +75,7 @@
             saveButtonStatus = SaveButtonStatus.Error;
             return;
         }
-        const res = await fetch("/api/v1/manage/update", {
+        const res = await fetch("/api/v1/manage/update?markdown=false", {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
@@ -84,7 +84,7 @@
         });
         originalPostSringified = await res.text();
         if (res.status !== 200) {
-            const resp = await fetch("/api/v1/manage/create_post", {
+            const resp = await fetch("/api/v1/manage/create_post?markdown=false", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

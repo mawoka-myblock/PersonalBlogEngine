@@ -1,5 +1,8 @@
 use crate::models;
-use crate::models::{Feedback, GetPost, ListPosts, NewPost, Post, PublicFeedback};
+use crate::models::{
+    Feedback, GetPost, ListPosts, NewPost, Post, PublicFeedback, Upload, UploadFileInput,
+    UploadFileResponse,
+};
 use crate::schema;
 use argon2::{
     password_hash::{
@@ -22,6 +25,8 @@ pub enum AppError {
     PoolError(#[from] r2d2::PoolError),
     #[error("Password could not be hashed")]
     PasswordHashError(#[from] password_hash::Error),
+    #[error("Base64 error")]
+    Base64Error(#[from] base64::DecodeError),
     #[error("Unknown error occured")]
     Unknown,
 }
@@ -61,10 +66,14 @@ fn posts_to_listposts(posts: Vec<Post>) -> Vec<models::ListPosts> {
     listposts
 }
 
-pub fn create_new_post(post: &NewPost, conn: &PgConnection) -> Result<models::Post, AppError> {
+pub fn create_new_post(post: &NewPost, markdown: bool, conn: &PgConnection) -> Result<models::Post, AppError> {
     use schema::posts::table;
 
-    let rendered_content = markdown_to_html(&post.content, &get_markdown_options());
+    let rendered_content = if markdown {
+        markdown_to_html(&post.content, &get_markdown_options())
+    } else {
+        post.content.to_string()
+    };
     let new_post = Post {
         slug: post.slug.to_string(),
         title: post.title.to_string(),
@@ -189,6 +198,7 @@ pub fn update_post(
     content_input: &Option<String>,
     title_input: &Option<String>,
     published: &Option<bool>,
+    markdown: bool,
     tags: &Option<Vec<String>>,
     intro: &Option<String>,
     conn: &PgConnection,
@@ -207,7 +217,11 @@ pub fn update_post(
             None => post.content,
         },
         rendered_content: match content_input {
-            Some(content) => Some(markdown_to_html(content, &get_markdown_options())),
+            Some(content) => if markdown {
+                Some(markdown_to_html(content, &get_markdown_options()))
+            } else {
+                Some(content.to_string())
+            },
             None => Some(post.rendered_content.unwrap()),
         },
         published: match published {
@@ -381,4 +395,57 @@ pub fn get_x_feedback_for_post(
         .load::<(Feedback, Option<Post>)>(conn)?;
 
     Ok(post_feedback_to_publicfeedback(res))
+}
+
+pub fn add_file(
+    input_data: &UploadFileInput,
+    conn: &PgConnection,
+) -> Result<UploadFileResponse, AppError> {
+    use schema::uploads::table;
+    let base64_data = match base64::decode(&input_data.data) {
+        Err(error) => return Err(AppError::Base64Error(error)),
+        Ok(d) => d,
+    };
+    let file_name = &input_data.file_name;
+    let upload = Upload {
+        id: Uuid::new_v4(),
+        data: base64_data,
+        date_added: chrono::Utc::now().naive_utc(),
+        mime_type: input_data.mime_type.clone(),
+        file_name: Some(file_name.clone()),
+    };
+    diesel::insert_into(table).values(&upload).execute(conn)?;
+    Ok(UploadFileResponse {
+        file_name: Some(file_name.to_string()),
+        id: upload.id,
+        mime_type: upload.mime_type,
+        date_added: upload.date_added,
+    })
+}
+
+pub fn get_file(file_id: Uuid, conn: &PgConnection) -> Result<Upload, AppError> {
+    use schema::uploads::dsl::uploads;
+    let res = uploads.find(file_id).get_result::<Upload>(conn)?;
+    Ok(res)
+}
+
+pub fn delete_file(file_id: Uuid, conn: &PgConnection) -> Result<(), AppError> {
+    use schema::uploads::dsl::uploads;
+    diesel::delete(uploads.find(file_id)).execute(conn)?;
+    // println!("{:?}", res);
+    Ok(())
+}
+
+pub fn get_all_files(
+    cursor: &i64,
+    conn: &PgConnection,
+) -> Result<Vec<models::UploadFileResponse>, AppError> {
+    use schema::uploads::dsl::{date_added, file_name, id, mime_type, uploads};
+    let res = uploads
+        .order_by(date_added.desc())
+        .limit(10)
+        .select((id, date_added, mime_type, file_name))
+        .offset(*cursor)
+        .load::<UploadFileResponse>(conn)?;
+    Ok(res)
 }

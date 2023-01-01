@@ -1,0 +1,5 @@
+:8000 {
+	reverse_proxy /admin/* localhost:3000
+	reverse_proxy /api* localhost:8080
+
+}

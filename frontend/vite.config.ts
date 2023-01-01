@@ -5,6 +5,12 @@ import { svelte } from '@sveltejs/vite-plugin-svelte'
 export default defineConfig({
   plugins: [svelte()],
   base: "/admin/",
+  server: {
+    port: 3000
+  },
+  preview: {
+    port: 3000
+  },
   resolve: {
     alias: {
       "$lib": "./src/lib",

@@ -8,11 +8,18 @@ use crate::search::update_index;
 use crate::DbPool;
 use crate::{actions, SearchData};
 
+#[derive(Deserialize)]
+pub struct QueryMarkdown {
+    pub markdown: bool,
+}
+
+
 #[post("/create_post")]
 pub async fn create_post(
     pool: web::Data<DbPool>,
     pool2: web::Data<DbPool>,
     data: web::Json<NewPost>,
+    query: web::Query<QueryMarkdown>,
     search_data: web::Data<Mutex<SearchData>>,
     id: Identity,
 ) -> Result<HttpResponse, Error> {
@@ -21,10 +28,10 @@ pub async fn create_post(
     };
     let user = web::block(move || {
         let conn = pool.get()?;
-        actions::create_new_post(&data, &conn)
+        actions::create_new_post(&data, query.0.markdown, &conn)
     })
-    .await?
-    .map_err(actix_web::error::ErrorConflict)?;
+        .await?
+        .map_err(actix_web::error::ErrorConflict)?;
 
     let conn = web::block(move || pool2.get())
         .await?
@@ -53,8 +60,8 @@ pub async fn delete_post(
         let conn = pool.get()?;
         actions::delete_post(&slug, &conn)
     })
-    .await?
-    .map_err(actix_web::error::ErrorNotFound)?;
+        .await?
+        .map_err(actix_web::error::ErrorNotFound)?;
     Ok(HttpResponse::Ok().finish())
 }
 
@@ -72,8 +79,8 @@ pub async fn get_post(
         let conn = pool.get()?;
         actions::get_single_post(&slug, &conn)
     })
-    .await?
-    .map_err(actix_web::error::ErrorNotFound)?;
+        .await?
+        .map_err(actix_web::error::ErrorNotFound)?;
     Ok(HttpResponse::Ok().json(post))
 }
 
@@ -138,6 +145,7 @@ pub async fn update_post(
     pool: web::Data<DbPool>,
     pool2: web::Data<DbPool>,
     data: web::Json<UpdatePost>,
+    query: web::Query<QueryMarkdown>,
     search_data: web::Data<Mutex<SearchData>>,
     id: Identity,
 ) -> Result<HttpResponse, Error> {
@@ -151,13 +159,14 @@ pub async fn update_post(
             &data.content,
             &data.title,
             &data.published,
+            query.0.markdown,
             &data.tags,
             &data.intro,
             &conn,
         )
     })
-    .await?
-    .map_err(actix_web::error::ErrorConflict)?;
+        .await?
+        .map_err(actix_web::error::ErrorConflict)?;
 
     let conn = web::block(move || pool2.get())
         .await?
@@ -186,7 +195,7 @@ pub async fn get_posts(
         let conn = pool.get()?;
         actions::get_all_posts(&query.offset, false, &conn)
     })
-    .await?
-    .map_err(actix_web::error::ErrorInternalServerError)?;
+        .await?
+        .map_err(actix_web::error::ErrorInternalServerError)?;
     Ok(HttpResponse::Ok().json(posts))
 }

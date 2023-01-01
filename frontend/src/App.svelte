@@ -1,6 +1,7 @@
 <script lang="ts">
     import { loggedIn, setupCompleted } from "./lib/stores";
     import Spinner from "./lib/components/Spinner.svelte";
+    import MainScreen from "./lib/components/MainScreen.svelte";
 
     let checkingIfLoggedIn = true;
     const checkIfLoggedIn = async () => {
@@ -26,9 +27,7 @@
     <Spinner />
 {:else if $loggedIn}
     <!-- Show Main-Menu -->
-    {#await import("./lib/components/MainScreen.svelte") then c}
-        <svelte:component this={c.default} />
-    {/await}
+    <MainScreen />
 {:else if $setupCompleted}
     <!-- Show Login-screen -->
     {#await import("./lib/components/Login.svelte") then c}

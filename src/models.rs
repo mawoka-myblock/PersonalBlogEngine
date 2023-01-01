@@ -83,3 +83,28 @@ pub struct PublicFeedback {
     pub feedback_text: Option<String>,
     pub created_at: chrono::NaiveDateTime,
 }
+
+#[derive(Debug, Clone, Queryable, Serialize, Deserialize, Insertable, AsChangeset)]
+#[table_name = "uploads"]
+pub struct Upload {
+    pub id: Uuid,
+    pub data: Vec<u8>,
+    pub date_added: chrono::NaiveDateTime,
+    pub mime_type: Option<String>,
+    pub file_name: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UploadFileInput {
+    pub file_name: String,
+    pub mime_type: Option<String>,
+    pub data: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Queryable)]
+pub struct UploadFileResponse {
+    pub id: Uuid,
+    pub date_added: chrono::NaiveDateTime,
+    pub mime_type: Option<String>,
+    pub file_name: Option<String>,
+}

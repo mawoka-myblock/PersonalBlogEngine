@@ -1,6 +1,7 @@
 <script lang="ts">
     import Spinner from "./Spinner.svelte";
     import Tabs from "./Tabs.svelte";
+    import FileTab from "./Files.svelte";
 
     interface ListPostResponse {
         slug: string;
@@ -37,7 +38,7 @@
 
 {#if postSelected === null}
     <Tabs
-        available_tabs={["Posts", "Feedback"]}
+        available_tabs={["Posts", "Feedback", "Files"]}
         bind:selected_tab={tabSelected}
     />
     {#if tabSelected === "Posts"}
@@ -165,7 +166,7 @@
                 </div>
             {/if}
         {/await}
-    {:else}
+    {:else if tabSelected === "Feedback"}
         {#await recentFeedback}
             <Spinner />
         {:then data}
@@ -275,6 +276,8 @@
                 </div>
             </div>
         {/await}
+        {:else if tabSelected === "Files"}
+        <FileTab />
     {/if}
 {:else}
     {#await import("./ViewPost.svelte") then c}
