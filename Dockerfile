@@ -26,7 +26,8 @@ RUN adduser \
     --uid "${UID}" \
     "${USER}" && \
     apt update &&  \
-    apt install -y libpq-dev
+    apt install -y libpq-dev && \
+    rustup target add x86_64-unknown-linux-musl
 
 
 WORKDIR /PersonalBlogEngine
