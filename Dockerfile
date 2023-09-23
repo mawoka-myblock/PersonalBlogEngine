@@ -9,7 +9,7 @@ COPY frontend/ .
 RUN pnpm run build
 
 
-FROM rust:latest AS builder
+FROM rust:1.67 AS builder
 
 RUN update-ca-certificates
 
@@ -26,8 +26,7 @@ RUN adduser \
     --uid "${UID}" \
     "${USER}" && \
     apt update &&  \
-    apt install -y libpq-dev && \
-    rustup target add x86_64-unknown-linux-musl
+    apt install -y libpq-dev
 
 
 WORKDIR /PersonalBlogEngine
@@ -37,7 +36,7 @@ COPY --from=frontend /usr/src/app/dist frontend/dist
 
 
 # We no longer need to use the x86_64-unknown-linux-musl target
-RUN cargo build --release --target=x86_64-unknown-linux-musl
+RUN cargo build --release
 
 ####################################################################################################
 ## Final image
