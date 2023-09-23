@@ -36,7 +36,7 @@ COPY --from=frontend /usr/src/app/dist frontend/dist
 
 
 # We no longer need to use the x86_64-unknown-linux-musl target
-RUN cargo build --release
+RUN cargo build --release --target=x86_64-unknown-linux-musl
 
 ####################################################################################################
 ## Final image
