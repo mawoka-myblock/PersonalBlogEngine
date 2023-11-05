@@ -270,13 +270,13 @@ pub fn get_all_posts(
         posts
             .filter(published.eq_all(true))
             .order_by(created_at.desc())
-            .limit(10)
+            .limit(100)
             .offset(*cursor)
             .load::<Post>(conn)?
     } else {
         posts
             .order_by(created_at.desc())
-            .limit(10)
+            .limit(100)
             .offset(*cursor)
             .load::<Post>(conn)?
     };
