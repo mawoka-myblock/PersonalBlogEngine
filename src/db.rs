@@ -1,7 +1,7 @@
 use crate::DbPool;
 use diesel::pg::PgConnection;
 use diesel::r2d2::{self, ConnectionManager};
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use r2d2::Pool;
 use std::env;
 

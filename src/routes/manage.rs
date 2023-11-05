@@ -13,7 +13,6 @@ pub struct QueryMarkdown {
     pub markdown: bool,
 }
 
-
 #[post("/create_post")]
 pub async fn create_post(
     pool: web::Data<DbPool>,
@@ -21,23 +20,23 @@ pub async fn create_post(
     data: web::Json<NewPost>,
     query: web::Query<QueryMarkdown>,
     search_data: web::Data<Mutex<SearchData>>,
-    id: Identity,
+    id: Option<Identity>,
 ) -> Result<HttpResponse, Error> {
-    if id.identity().is_none() {
+    if id.is_none() {
         return Ok(HttpResponse::Unauthorized().finish());
     };
     let user = web::block(move || {
-        let conn = pool.get()?;
-        actions::create_new_post(&data, query.0.markdown, &conn)
+        let mut conn = pool.get()?;
+        actions::create_new_post(&data, query.0.markdown, &mut conn)
     })
+    .await?
+    .map_err(actix_web::error::ErrorConflict)?;
+
+    let mut conn = web::block(move || pool2.get())
         .await?
         .map_err(actix_web::error::ErrorConflict)?;
 
-    let conn = web::block(move || pool2.get())
-        .await?
-        .map_err(actix_web::error::ErrorConflict)?;
-
-    update_index(&conn, search_data);
+    update_index(&mut conn, search_data);
     Ok(HttpResponse::Ok().json(user))
 }
 
@@ -50,18 +49,18 @@ pub struct QueryDelete {
 pub async fn delete_post(
     pool: web::Data<DbPool>,
     query: web::Query<QueryDelete>,
-    id: Identity,
+    id: Option<Identity>,
 ) -> Result<HttpResponse, Error> {
-    if id.identity().is_none() {
+    if id.is_none() {
         return Ok(HttpResponse::Unauthorized().finish());
     };
     let slug = query.slug.to_string();
     web::block(move || {
-        let conn = pool.get()?;
-        actions::delete_post(&slug, &conn)
+        let mut conn = pool.get()?;
+        actions::delete_post(&slug, &mut conn)
     })
-        .await?
-        .map_err(actix_web::error::ErrorNotFound)?;
+    .await?
+    .map_err(actix_web::error::ErrorNotFound)?;
     Ok(HttpResponse::Ok().finish())
 }
 
@@ -69,18 +68,18 @@ pub async fn delete_post(
 pub async fn get_post(
     pool: web::Data<DbPool>,
     query: web::Query<QueryDelete>,
-    id: Identity,
+    id: Option<Identity>,
 ) -> Result<HttpResponse, Error> {
-    if id.identity().is_none() {
+    if id.is_none() {
         return Ok(HttpResponse::Unauthorized().finish());
     };
     let slug = query.slug.to_string();
     let post = web::block(move || {
-        let conn = pool.get()?;
-        actions::get_single_post(&slug, &conn)
+        let mut conn = pool.get()?;
+        actions::get_single_post(&slug, &mut conn)
     })
-        .await?
-        .map_err(actix_web::error::ErrorNotFound)?;
+    .await?
+    .map_err(actix_web::error::ErrorNotFound)?;
     Ok(HttpResponse::Ok().json(post))
 }
 
@@ -96,21 +95,21 @@ pub async fn setup(
     data: web::Json<SetupData>,
 ) -> Result<HttpResponse, Error> {
     // Creating 2 connections, because of the move-thing
-    let conn = pool
+    let mut conn = pool
         .get()
         .map_err(actix_web::error::ErrorInternalServerError)?;
-    let conn2 = pool
+    let mut conn2 = pool
         .get()
         .map_err(actix_web::error::ErrorInternalServerError)?;
     // get number of users in db to determine if the setup has already been completed
-    let user_count = web::block(move || actions::count_users(&conn))
+    let user_count = web::block(move || actions::count_users(&mut conn))
         .await?
         .map_err(actix_web::error::ErrorConflict)?;
     // Check if setup is already completed
     if user_count != 0 {
         return Ok(HttpResponse::BadRequest().body("Setup already completed"));
     }
-    web::block(move || actions::setup(&data.email, &data.password, &conn2))
+    web::block(move || actions::setup(&data.email, &data.password, &mut conn2))
         .await?
         .map_err(actix_web::error::ErrorConflict)?;
     Ok(HttpResponse::Ok().finish())
@@ -118,10 +117,10 @@ pub async fn setup(
 
 #[get("/setup")]
 pub async fn check_setup(pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
-    let conn = pool
+    let mut conn = pool
         .get()
         .map_err(actix_web::error::ErrorInternalServerError)?;
-    let user_count = web::block(move || actions::count_users(&conn))
+    let user_count = web::block(move || actions::count_users(&mut conn))
         .await?
         .map_err(actix_web::error::ErrorConflict)?;
     if user_count == 0 {
@@ -147,13 +146,13 @@ pub async fn update_post(
     data: web::Json<UpdatePost>,
     query: web::Query<QueryMarkdown>,
     search_data: web::Data<Mutex<SearchData>>,
-    id: Identity,
+    id: Option<Identity>,
 ) -> Result<HttpResponse, Error> {
-    if id.identity().is_none() {
+    if id.is_none() {
         return Ok(HttpResponse::Unauthorized().finish());
     };
     let user = web::block(move || {
-        let conn = pool.get()?;
+        let mut conn = pool.get()?;
         actions::update_post(
             &data.slug,
             &data.content,
@@ -162,17 +161,17 @@ pub async fn update_post(
             query.0.markdown,
             &data.tags,
             &data.intro,
-            &conn,
+            &mut conn,
         )
     })
+    .await?
+    .map_err(actix_web::error::ErrorConflict)?;
+
+    let mut conn = web::block(move || pool2.get())
         .await?
         .map_err(actix_web::error::ErrorConflict)?;
 
-    let conn = web::block(move || pool2.get())
-        .await?
-        .map_err(actix_web::error::ErrorConflict)?;
-
-    update_index(&conn, search_data);
+    update_index(&mut conn, search_data);
 
     Ok(HttpResponse::Ok().json(user))
 }
@@ -186,16 +185,16 @@ pub struct GetPostsQuery {
 pub async fn get_posts(
     pool: web::Data<DbPool>,
     query: web::Query<GetPostsQuery>,
-    id: Identity,
+    id: Option<Identity>,
 ) -> Result<HttpResponse, Error> {
-    if id.identity().is_none() {
+    if id.is_none() {
         return Ok(HttpResponse::Unauthorized().finish());
     };
     let posts = web::block(move || {
-        let conn = pool.get()?;
-        actions::get_all_posts(&query.offset, false, &conn)
+        let mut conn = pool.get()?;
+        actions::get_all_posts(&query.offset, false, &mut conn)
     })
-        .await?
-        .map_err(actix_web::error::ErrorInternalServerError)?;
+    .await?
+    .map_err(actix_web::error::ErrorInternalServerError)?;
     Ok(HttpResponse::Ok().json(posts))
 }

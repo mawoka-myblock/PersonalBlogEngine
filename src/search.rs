@@ -23,7 +23,7 @@ pub fn get_schema() -> Schema {
     schema_builder.build()
 }
 
-pub fn initialize_index(index: &Index, conn: &PgConnection) {
+pub fn initialize_index(index: &Index, conn: &mut PgConnection) {
     let mut index_writer = index.writer(100_000_000).unwrap();
     let res = posts
         .filter(published.eq_all(true))
@@ -56,7 +56,7 @@ pub fn initialize_index(index: &Index, conn: &PgConnection) {
     index_writer.commit().unwrap();
 }
 
-pub fn update_index(conn: &PgConnection, search_data: actix_web::web::Data<Mutex<SearchData>>) {
+pub fn update_index(conn: &mut PgConnection, search_data: actix_web::web::Data<Mutex<SearchData>>) {
     //.map_err(actix_web::error::ErrorConflict)?;
     let mut s_data = search_data.lock().unwrap();
     let index_path = TempDir::new().unwrap();

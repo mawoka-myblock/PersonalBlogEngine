@@ -1,4 +1,6 @@
-table! {
+// @generated automatically by Diesel CLI.
+
+diesel::table! {
     feedback (id) {
         id -> Uuid,
         ip_hash -> Bytea,
@@ -9,7 +11,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     posts (slug) {
         slug -> Text,
         title -> Varchar,
@@ -26,7 +28,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     uploads (id) {
         id -> Uuid,
         data -> Bytea,
@@ -36,11 +38,18 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     users (email) {
+        #[max_length = 255]
         email -> Varchar,
+        #[max_length = 255]
         password -> Varchar,
     }
 }
 
-allow_tables_to_appear_in_same_query!(feedback, posts, uploads, users,);
+diesel::allow_tables_to_appear_in_same_query!(
+    feedback,
+    posts,
+    uploads,
+    users,
+);

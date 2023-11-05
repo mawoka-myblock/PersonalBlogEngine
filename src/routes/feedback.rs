@@ -27,8 +27,8 @@ pub async fn post_feedback(
 
     let ip_hash = blake3::hash(ip_addr.as_ref()).as_bytes().to_vec();
     let res = web::block(move || {
-        let conn = pool.get()?;
-        let post = actions::get_single_post(&*data.0.post_slug, &conn)?;
+        let mut conn = pool.get()?;
+        let post = actions::get_single_post(&*data.0.post_slug, &mut conn)?;
 
         actions::submit_feedback(
             actions::SubmitFeedbackInput {
@@ -37,7 +37,7 @@ pub async fn post_feedback(
                 ip_hash,
                 thumbs_up: data.0.thumbs_up,
             },
-            &conn,
+            &mut conn,
         )
     })
     .await?;
@@ -74,14 +74,14 @@ pub struct GetPostFeedbackQuery {
 pub async fn get_feedback_from_post(
     query: web::Query<GetPostFeedbackQuery>,
     pool: web::Data<DbPool>,
-    id: Identity,
+    id: Option<Identity>,
 ) -> Result<HttpResponse, Error> {
-    if id.identity().is_none() {
+    if id.is_none() {
         return Ok(HttpResponse::Unauthorized().finish());
     };
     let res = web::block(move || {
-        let conn = pool.get()?;
-        actions::get_x_feedback_for_post(query.limit, query.post_id, &conn)
+        let mut conn = pool.get()?;
+        actions::get_x_feedback_for_post(query.limit, query.post_id, &mut conn)
     })
     .await?
     .map_err(actix_web::error::ErrorInternalServerError)?;
@@ -97,14 +97,14 @@ pub struct GetFeedbackQuery {
 pub async fn get_feedback_list(
     query: web::Query<GetFeedbackQuery>,
     pool: web::Data<DbPool>,
-    id: Identity,
+    id: Option<Identity>,
 ) -> Result<HttpResponse, Error> {
-    if id.identity().is_none() {
+    if id.is_none() {
         return Ok(HttpResponse::Unauthorized().finish());
     };
     let res = web::block(move || {
-        let conn = pool.get()?;
-        actions::get_last_x_feedback(query.limit, &conn)
+        let mut conn = pool.get()?;
+        actions::get_last_x_feedback(query.limit, &mut conn)
     })
     .await?
     .map_err(actix_web::error::ErrorInternalServerError)?;

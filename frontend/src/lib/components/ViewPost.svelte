@@ -251,11 +251,11 @@
         </span>
     {/if}
 </span>
-<div class="pt-12">
+<div class="pt-12 h-screen">
     {#await fetchPost()}
         <Spinner />
     {:then p}
-        {#await import("./Editor.svelte")}
+        {#await import("./EditorNew.svelte")}
             <Spinner />
         {:then c}
             <div class="flex flex-col">

@@ -66,7 +66,11 @@ fn posts_to_listposts(posts: Vec<Post>) -> Vec<models::ListPosts> {
     listposts
 }
 
-pub fn create_new_post(post: &NewPost, markdown: bool, conn: &PgConnection) -> Result<models::Post, AppError> {
+pub fn create_new_post(
+    post: &NewPost,
+    markdown: bool,
+    conn: &mut PgConnection,
+) -> Result<models::Post, AppError> {
     use schema::posts::table;
 
     let rendered_content = if markdown {
@@ -92,7 +96,7 @@ pub fn create_new_post(post: &NewPost, markdown: bool, conn: &PgConnection) -> R
     Ok(new_post)
 }
 
-pub fn delete_post(slug_input: &str, conn: &PgConnection) -> Result<usize, AppError> {
+pub fn delete_post(slug_input: &str, conn: &mut PgConnection) -> Result<usize, AppError> {
     use schema::posts::dsl::{posts, slug};
     let num_deleted = diesel::delete(posts.filter(slug.like(slug_input))).execute(conn)?;
     Ok(num_deleted)
@@ -101,7 +105,7 @@ pub fn delete_post(slug_input: &str, conn: &PgConnection) -> Result<usize, AppEr
 pub fn check_user(
     email_input: &str,
     password_input: &str,
-    conn: &PgConnection,
+    conn: &mut PgConnection,
 ) -> Result<Option<models::User>, AppError> {
     use schema::users::dsl::{email, users};
     // let argon2 = Argon2::default();
@@ -122,19 +126,19 @@ pub fn check_user(
     }
 }
 
-pub fn count_users(conn: &PgConnection) -> Result<usize, AppError> {
+pub fn count_users(conn: &mut PgConnection) -> Result<usize, AppError> {
     use schema::users::dsl::users;
     let count = users.count().get_result::<i64>(conn)?;
     Ok(count as usize)
 }
 
-pub fn count_posts(conn: &PgConnection) -> Result<usize, AppError> {
+pub fn count_posts(conn: &mut PgConnection) -> Result<usize, AppError> {
     use schema::posts::dsl::posts;
     let count = posts.count().get_result::<i64>(conn)?;
     Ok(count as usize)
 }
 
-pub fn setup(input_email: &str, input_password: &str, conn: &PgConnection) -> Result<(), AppError> {
+pub fn setup(input_email: &str, input_password: &str, conn: &mut PgConnection) -> Result<(), AppError> {
     use schema::users::dsl::users;
     let argon2 = Argon2::default();
     let salt = SaltString::generate(&mut OsRng);
@@ -149,7 +153,7 @@ pub fn setup(input_email: &str, input_password: &str, conn: &PgConnection) -> Re
 
 pub fn get_raw_markdown(
     slug_input: &str,
-    conn: &PgConnection,
+    conn: &mut PgConnection,
 ) -> Result<Option<GetPost>, AppError> {
     use schema::posts::dsl::{posts, published, slug};
     let post_obj = posts
@@ -167,7 +171,7 @@ pub fn get_raw_markdown(
 
 pub fn get_rendered_markdown(
     slug_input: &str,
-    conn: &PgConnection,
+    conn: &mut PgConnection,
 ) -> Result<Option<GetPost>, AppError> {
     use schema::posts::dsl::{posts, published, slug};
     let post = posts
@@ -201,7 +205,7 @@ pub fn update_post(
     markdown: bool,
     tags: &Option<Vec<String>>,
     intro: &Option<String>,
-    conn: &PgConnection,
+    conn: &mut PgConnection,
 ) -> Result<models::Post, AppError> {
     use schema::posts::dsl::posts;
     let post = posts.find(slug_input).get_result::<Post>(conn)?;
@@ -217,11 +221,13 @@ pub fn update_post(
             None => post.content,
         },
         rendered_content: match content_input {
-            Some(content) => if markdown {
-                Some(markdown_to_html(content, &get_markdown_options()))
-            } else {
-                Some(content.to_string())
-            },
+            Some(content) => {
+                if markdown {
+                    Some(markdown_to_html(content, &get_markdown_options()))
+                } else {
+                    Some(content.to_string())
+                }
+            }
             None => Some(post.rendered_content.unwrap()),
         },
         published: match published {
@@ -257,7 +263,7 @@ pub fn update_post(
 pub fn get_all_posts(
     cursor: &i64,
     public: bool,
-    conn: &PgConnection,
+    conn: &mut PgConnection,
 ) -> Result<Vec<models::ListPosts>, AppError> {
     use schema::posts::dsl::{created_at, posts, published};
     let res = if public {
@@ -280,7 +286,7 @@ pub fn get_all_posts(
 pub fn get_posts_with_specific_tag(
     tag: &str,
     offset: &i64,
-    conn: &PgConnection,
+    conn: &mut PgConnection,
 ) -> Result<Vec<models::ListPosts>, AppError> {
     use schema::posts::dsl::{created_at, posts, tags};
     let res = posts
@@ -292,7 +298,7 @@ pub fn get_posts_with_specific_tag(
     Ok(posts_to_listposts(res))
 }
 
-pub fn get_single_post(slug: &str, conn: &PgConnection) -> Result<models::Post, AppError> {
+pub fn get_single_post(slug: &str, conn: &mut PgConnection) -> Result<models::Post, AppError> {
     use schema::posts::dsl::posts;
     let res = posts.find(slug).get_result::<Post>(conn)?;
     Ok(res)
@@ -308,7 +314,7 @@ pub struct SubmitFeedbackInput {
 
 pub fn submit_feedback(
     feedback_input: SubmitFeedbackInput,
-    conn: &PgConnection,
+    conn: &mut PgConnection,
 ) -> Result<bool, AppError> {
     use schema::feedback::table;
 
@@ -364,7 +370,7 @@ pub fn post_feedback_to_publicfeedback(data: Vec<(Feedback, Option<Post>)>) -> V
 
 pub fn get_last_x_feedback(
     limit: i64,
-    conn: &PgConnection,
+    conn: &mut PgConnection,
 ) -> Result<Vec<PublicFeedback>, AppError> {
     use schema::feedback::dsl::{created_at, post_id};
     use schema::feedback::table as fb_table;
@@ -381,7 +387,7 @@ pub fn get_last_x_feedback(
 pub fn get_x_feedback_for_post(
     limit: i64,
     input_post_id: Uuid,
-    conn: &PgConnection,
+    conn: &mut PgConnection,
 ) -> Result<Vec<PublicFeedback>, AppError> {
     use schema::feedback::dsl::{created_at, post_id};
     use schema::feedback::table as fb_table;
@@ -399,7 +405,7 @@ pub fn get_x_feedback_for_post(
 
 pub fn add_file(
     input_data: &UploadFileInput,
-    conn: &PgConnection,
+    conn: &mut PgConnection,
 ) -> Result<UploadFileResponse, AppError> {
     use schema::uploads::table;
     let base64_data = match base64::decode(&input_data.data) {
@@ -423,13 +429,13 @@ pub fn add_file(
     })
 }
 
-pub fn get_file(file_id: Uuid, conn: &PgConnection) -> Result<Upload, AppError> {
+pub fn get_file(file_id: Uuid, conn: &mut PgConnection) -> Result<Upload, AppError> {
     use schema::uploads::dsl::uploads;
     let res = uploads.find(file_id).get_result::<Upload>(conn)?;
     Ok(res)
 }
 
-pub fn delete_file(file_id: Uuid, conn: &PgConnection) -> Result<(), AppError> {
+pub fn delete_file(file_id: Uuid, conn: &mut PgConnection) -> Result<(), AppError> {
     use schema::uploads::dsl::uploads;
     diesel::delete(uploads.find(file_id)).execute(conn)?;
     // println!("{:?}", res);
@@ -438,7 +444,7 @@ pub fn delete_file(file_id: Uuid, conn: &PgConnection) -> Result<(), AppError> {
 
 pub fn get_all_files(
     cursor: &i64,
-    conn: &PgConnection,
+    conn: &mut PgConnection,
 ) -> Result<Vec<models::UploadFileResponse>, AppError> {
     use schema::uploads::dsl::{date_added, file_name, id, mime_type, uploads};
     let res = uploads

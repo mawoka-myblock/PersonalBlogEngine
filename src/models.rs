@@ -4,8 +4,9 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 // #[derive(Debug, Clone, Queryable, Insertable, Serialize, Deserialize)]
-#[derive(Debug, Clone, Queryable, Serialize, Deserialize, Insertable, AsChangeset)]
-#[table_name = "posts"]
+#[derive(Debug, Clone, Queryable, Serialize, Deserialize, Insertable, AsChangeset, Selectable)]
+#[diesel(table_name = crate::schema::posts)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 // #[primary_key(slug)]
 pub struct Post {
     pub slug: String,
@@ -33,7 +34,7 @@ pub struct NewPost {
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, Serialize, Deserialize)]
-#[table_name = "users"]
+#[diesel(table_name = crate::schema::users)]
 // #[primary_key(email)]
 pub struct User {
     pub email: String,
@@ -60,12 +61,13 @@ pub struct GetPost {
 }
 
 #[derive(
-    Debug, Clone, Queryable, Serialize, Deserialize, AsChangeset, Insertable, Associations,
+    Debug, Clone, Queryable, Serialize, Deserialize, AsChangeset, Insertable, Associations, Selectable
 )]
 // #[table_name = "posts"]
-#[belongs_to(foreign_key = id)]
+// #[belongs_to(foreign_key = id)]
+#[diesel(belongs_to(Post))]
 #[primary_key(id)]
-#[table_name = "feedback"]
+#[diesel(table_name = crate::schema::feedback)]
 pub struct Feedback {
     pub id: Uuid,
     pub ip_hash: Vec<u8>,
@@ -85,7 +87,7 @@ pub struct PublicFeedback {
 }
 
 #[derive(Debug, Clone, Queryable, Serialize, Deserialize, Insertable, AsChangeset)]
-#[table_name = "uploads"]
+#[diesel(table_name = crate::schema::uploads)]
 pub struct Upload {
     pub id: Uuid,
     pub data: Vec<u8>,

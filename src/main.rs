@@ -14,46 +14,48 @@ use std::sync::Mutex;
 
 #[macro_use]
 extern crate diesel;
-extern crate dotenv;
-#[macro_use]
+extern crate dotenvy;
 extern crate diesel_migrations;
 #[macro_use]
 extern crate tantivy;
 
 use crate::search::{get_schema, initialize_index};
 use actix_cors::Cors;
-use actix_form_data::{Error, Field, Form};
-use actix_identity::{CookieIdentityPolicy, IdentityService};
+// use actix_form_data::{Error, Field, Form};
+use actix_identity::{IdentityMiddleware};
+use actix_session::{SessionMiddleware, storage::CookieSessionStore};
+use actix_web::cookie::Key;
 use actix_web::web::Data;
 use actix_web::{web, App, HttpServer};
 use diesel::prelude::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
-use diesel_migrations::embed_migrations;
 use tantivy::schema::Schema;
-use tantivy::{Index, LeasedItem, ReloadPolicy, Searcher};
+use tantivy::{Index, ReloadPolicy, Searcher};
 use tempfile::TempDir;
+use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
 pub type DbPool = Pool<ConnectionManager<PgConnection>>;
 
 pub struct SearchData {
     pub index: Index,
-    pub searcher: LeasedItem<Searcher>,
+    pub searcher: Searcher,
     pub schema: Schema,
 }
 
-embed_migrations!();
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
+//noinspection ALL
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    dotenv::dotenv().ok();
+    dotenvy::dotenv().ok();
 
     let pool = db::get_pool();
 
-    let conn = pool.get().unwrap();
-    embedded_migrations::run(&conn).unwrap();
+    let mut conn = pool.get().unwrap();
+    conn.run_pending_migrations(MIGRATIONS);
     let index_path = TempDir::new().unwrap();
     let index = Index::create_in_dir(&index_path, get_schema()).unwrap();
     let schema = get_schema();
-    initialize_index(&index, &pool.get().unwrap());
+    initialize_index(&index, &mut pool.get().unwrap());
 
     let reader = index
         .reader_builder()
@@ -70,9 +72,6 @@ async fn main() -> std::io::Result<()> {
     }));
 
     HttpServer::new(move || {
-        let policy = CookieIdentityPolicy::new(&[0; 32])
-            .name("auth-cookie")
-            .secure(false);
         let cors = Cors::default()
             .allow_any_origin()
             .allow_any_method()
@@ -85,7 +84,8 @@ async fn main() -> std::io::Result<()> {
                     private_key.clone(),
                 )
             )*/
-            .wrap(IdentityService::new(policy))
+            .wrap(SessionMiddleware::new(CookieSessionStore::default(), Key::generate()))
+            .wrap(IdentityMiddleware::default())
             // .wrap(middleware::Logger::default())
             .app_data(web::Data::new(pool.clone()))
             .wrap(cors)
@@ -129,15 +129,9 @@ async fn main() -> std::io::Result<()> {
                                     .service(routes::uploads::list_files) // GET /list?offset=int
                                     .service(routes::uploads::upload_file) // POST /
                                     .service(routes::uploads::get_file) // GET /{file_id}
-                                    .service(routes::uploads::delete_file) // DELETE /{file_id}
-
+                                    .service(routes::uploads::delete_file), // DELETE /{file_id}
                             ),
                     )
-                    .service(
-                        web::scope("admin")
-                            .service(routes::dashboard::index)
-                            .service(routes::dashboard::dist),
-                    ),
             )
 
         // .service(routes::dashboard::admin_index)

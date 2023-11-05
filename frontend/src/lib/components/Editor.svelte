@@ -23,8 +23,8 @@
     }
 </script>
 
-<div class="prose w-screen">
-    <div class="w-screen">
+<div class="prose w-screen h-full">
+    <div class="w-screen h-full">
         <Editor {plugins} {value} on:change={handleChange} uploadImages={upload_image}/>
     </div>
 </div>

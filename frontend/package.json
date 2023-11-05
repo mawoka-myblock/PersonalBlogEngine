@@ -12,6 +12,9 @@
   },
   "devDependencies": {
     "@bytemd/plugin-gfm": "^1.14.0",
+    "@ckeditor/ckeditor5-build-classic": "^35.4.0",
+    "@ckeditor/ckeditor5-image": "^35.4.0",
+    "@ckeditor/ckeditor5-upload": "^35.4.0",
     "@sveltejs/vite-plugin-svelte": "^2.0.2",
     "@tailwindcss/typography": "^0.5.2",
     "@tsconfig/svelte": "^3.0.0",

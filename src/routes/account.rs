@@ -1,5 +1,5 @@
 use actix_identity::Identity;
-use actix_web::{get, post, web, Error, HttpResponse};
+use actix_web::{get, post, web, Error, HttpResponse, HttpRequest, HttpMessage};
 use serde::{Deserialize, Serialize};
 
 use crate::{actions, DbPool};
@@ -12,19 +12,19 @@ pub struct FormData {
 
 #[post("/login")]
 pub async fn login(
-    id: Identity,
     pool: web::Data<DbPool>,
+    request: HttpRequest,
     data: web::Json<FormData>,
 ) -> Result<HttpResponse, Error> {
     let user = web::block(move || {
-        let conn = pool.get()?;
-        actions::check_user(&data.email, &data.password, &conn)
+        let mut conn = pool.get()?;
+        actions::check_user(&data.email, &data.password, &mut conn)
     })
     .await?
     .map_err(actix_web::error::ErrorInternalServerError)?;
     match user {
         Some(user) => {
-            id.remember(user.email);
+            Identity::login(&request.extensions(), user.email.into()).unwrap();
             Ok(HttpResponse::Ok().finish())
         }
         None => Ok(HttpResponse::Unauthorized().finish()),
@@ -34,7 +34,7 @@ pub async fn login(
 #[get("/logout")]
 pub async fn logout(id: Identity) -> HttpResponse {
     // remove identity
-    id.forget();
+    id.logout();
     HttpResponse::Ok().finish()
 }
 #[derive(Serialize)]
@@ -44,11 +44,11 @@ pub struct CheckResponse {
 }
 
 #[get("/check")]
-pub async fn check_login_status(id: Identity) -> Result<HttpResponse, Error> {
-    if let Some(id) = id.identity() {
+pub async fn check_login_status(id: Option<Identity>) -> Result<HttpResponse, Error> {
+    if let Some(id) = id {
         let resp = CheckResponse {
             is_logged_in: true,
-            user: Some(id),
+            user: Some(id.id().unwrap()),
         };
         Ok(HttpResponse::Ok().json(resp))
     } else {

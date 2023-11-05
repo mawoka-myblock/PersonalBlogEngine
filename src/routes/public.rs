@@ -19,8 +19,8 @@ pub async fn get_raw_markdown(
 ) -> Result<HttpResponse, Error> {
     let slug = query.slug.to_string();
     let markdown = web::block(move || {
-        let conn = pool.get()?;
-        actions::get_raw_markdown(&slug, &conn)
+        let mut conn = pool.get()?;
+        actions::get_raw_markdown(&slug, &mut conn)
     })
     .await?
     .map_err(actix_web::error::ErrorNotFound)?;
@@ -37,8 +37,8 @@ pub async fn get_rendered_markdown(
 ) -> Result<HttpResponse, Error> {
     let slug = query.slug.to_string();
     let html = web::block(move || {
-        let conn = pool.get()?;
-        actions::get_rendered_markdown(&slug, &conn)
+        let mut conn = pool.get()?;
+        actions::get_rendered_markdown(&slug, &mut conn)
     })
     .await?
     .map_err(actix_web::error::ErrorNotFound)?;
@@ -59,8 +59,8 @@ pub async fn get_posts(
     query: web::Query<GetPostsQuery>,
 ) -> Result<HttpResponse, Error> {
     let posts = web::block(move || {
-        let conn = pool.get()?;
-        actions::get_all_posts(&query.offset, true, &conn)
+        let mut conn = pool.get()?;
+        actions::get_all_posts(&query.offset, true, &mut conn)
     })
     .await?
     .map_err(actix_web::error::ErrorInternalServerError)?;
@@ -74,8 +74,8 @@ pub async fn get_posts_with_tag(
     offset: web::Query<GetPostsQuery>,
 ) -> Result<HttpResponse, Error> {
     let posts = web::block(move || {
-        let conn = pool.get()?;
-        actions::get_posts_with_specific_tag(&query.into_inner(), &offset.offset, &conn)
+        let mut conn = pool.get()?;
+        actions::get_posts_with_specific_tag(&query.into_inner(), &offset.offset, &mut conn)
     })
     .await?
     .map_err(actix_web::error::ErrorInternalServerError)?;

@@ -1,4 +1,5 @@
 export const upload_files = async (file: File): Promise<{url: string, id: string}> => {
+    console.log(file)
     return new Promise((resolve, reject) => {
         const reader = new FileReader()
         reader.readAsDataURL(file)
