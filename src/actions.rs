@@ -138,7 +138,11 @@ pub fn count_posts(conn: &mut PgConnection) -> Result<usize, AppError> {
     Ok(count as usize)
 }
 
-pub fn setup(input_email: &str, input_password: &str, conn: &mut PgConnection) -> Result<(), AppError> {
+pub fn setup(
+    input_email: &str,
+    input_password: &str,
+    conn: &mut PgConnection,
+) -> Result<(), AppError> {
     use schema::users::dsl::users;
     let argon2 = Argon2::default();
     let salt = SaltString::generate(&mut OsRng);

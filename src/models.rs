@@ -61,7 +61,15 @@ pub struct GetPost {
 }
 
 #[derive(
-    Debug, Clone, Queryable, Serialize, Deserialize, AsChangeset, Insertable, Associations, Selectable
+    Debug,
+    Clone,
+    Queryable,
+    Serialize,
+    Deserialize,
+    AsChangeset,
+    Insertable,
+    Associations,
+    Selectable,
 )]
 // #[table_name = "posts"]
 // #[belongs_to(foreign_key = id)]

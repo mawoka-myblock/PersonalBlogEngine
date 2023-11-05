@@ -1,5 +1,5 @@
 use actix_identity::Identity;
-use actix_web::{get, post, web, Error, HttpResponse, HttpRequest, HttpMessage};
+use actix_web::{get, post, web, Error, HttpMessage, HttpRequest, HttpResponse};
 use serde::{Deserialize, Serialize};
 
 use crate::{actions, DbPool};
