@@ -9,7 +9,7 @@ COPY frontend/ .
 RUN pnpm run build
 
 
-FROM rust:1.67 AS builder
+FROM rust:1 AS builder
 
 RUN update-ca-certificates
 
