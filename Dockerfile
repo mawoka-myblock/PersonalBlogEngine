@@ -4,7 +4,8 @@ WORKDIR /usr/src/app
 COPY frontend/package*.json ./
 COPY frontend/pnpm-lock.yaml ./
 
-RUN corepack enable && corepack prepare pnpm@7.1.0 --activate && pnpm i
+RUN corepack enable pnpm
+RUN pnpm i
 COPY frontend/ .
 RUN pnpm run build
 
