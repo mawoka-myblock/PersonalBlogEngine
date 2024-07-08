@@ -1,4 +1,4 @@
-FROM node:17.8-bullseye as frontend
+FROM node:17.8-bookworm as frontend
 
 WORKDIR /usr/src/app
 COPY frontend/package*.json ./
@@ -41,7 +41,7 @@ RUN cargo build --release
 ####################################################################################################
 ## Final image
 ####################################################################################################
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 # Import from builder.
 COPY --from=builder /etc/passwd /etc/passwd
