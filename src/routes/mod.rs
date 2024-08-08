@@ -3,3 +3,4 @@ pub mod feedback;
 pub mod manage;
 pub mod public;
 pub mod uploads;
+pub mod dashboard;

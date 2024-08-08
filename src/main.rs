@@ -131,11 +131,15 @@ async fn main() -> std::io::Result<()> {
                                 .service(routes::uploads::upload_file) // POST /
                                 .service(routes::uploads::get_file) // GET /{file_id}
                                 .service(routes::uploads::delete_file), // DELETE /{file_id}
-                        ),
-                ),
+                        ),  
+                )
+                .service(
+                    web::scope("/admin")
+                        .service(routes::dashboard::index)
+                        .service(routes::dashboard::dist)
+                    )
             )
 
-        // .service(routes::dashboard::admin_index)
     })
     .bind(("0.0.0.0", 8080))?
     .run()
