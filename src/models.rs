@@ -1,5 +1,4 @@
 use super::chrono;
-use super::schema::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -74,7 +73,7 @@ pub struct GetPost {
 // #[table_name = "posts"]
 // #[belongs_to(foreign_key = id)]
 #[diesel(belongs_to(Post))]
-#[primary_key(id)]
+#[diesel(primary_key(id))]
 #[diesel(table_name = crate::schema::feedback)]
 pub struct Feedback {
     pub id: Uuid,

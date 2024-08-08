@@ -1,7 +1,7 @@
 use std::sync::Mutex;
 // use crate::search::search;
 use actix_web::{get, web, Error, HttpResponse};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
 

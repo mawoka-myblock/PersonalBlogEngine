@@ -16,6 +16,7 @@ use diesel::r2d2;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 
 #[derive(Error, Debug)]
 pub enum AppError {
@@ -412,7 +413,7 @@ pub fn add_file(
     conn: &mut PgConnection,
 ) -> Result<UploadFileResponse, AppError> {
     use schema::uploads::table;
-    let base64_data = match base64::decode(&input_data.data) {
+    let base64_data = match STANDARD.decode(&input_data.data) {
         Err(error) => return Err(AppError::Base64Error(error)),
         Ok(d) => d,
     };

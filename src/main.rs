@@ -51,7 +51,7 @@ async fn main() -> std::io::Result<()> {
     let pool = db::get_pool();
 
     let mut conn = pool.get().unwrap();
-    conn.run_pending_migrations(MIGRATIONS);
+    let _ = conn.run_pending_migrations(MIGRATIONS).unwrap();
     let index_path = TempDir::new().unwrap();
     let index = Index::create_in_dir(&index_path, get_schema()).unwrap();
     let schema = get_schema();
