@@ -47,15 +47,16 @@ pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenvy::dotenv().ok();
-
+    let _ = Key::from(std::env::var("SECRET_KEY").expect("SECRET_KEY UNSET!").as_bytes());
     let pool = db::get_pool();
-
     let mut conn = pool.get().unwrap();
     let _ = conn.run_pending_migrations(MIGRATIONS).unwrap();
     let index_path = TempDir::new().unwrap();
     let index = Index::create_in_dir(&index_path, get_schema()).unwrap();
     let schema = get_schema();
     initialize_index(&index, &mut pool.get().unwrap());
+
+    
 
     let reader = index
         .reader_builder()
@@ -72,6 +73,7 @@ async fn main() -> std::io::Result<()> {
     }));
 
     HttpServer::new(move || {
+        let secret_key = Key::from(std::env::var("SECRET_KEY").expect("SECRET_KEY UNSET!").as_bytes());
         let cors = Cors::default()
             .allow_any_origin()
             .allow_any_method()
@@ -86,7 +88,7 @@ async fn main() -> std::io::Result<()> {
             )*/
             .wrap(SessionMiddleware::new(
                 CookieSessionStore::default(),
-                Key::generate(),
+                secret_key,
             ))
             .wrap(IdentityMiddleware::default())
             // .wrap(middleware::Logger::default())
