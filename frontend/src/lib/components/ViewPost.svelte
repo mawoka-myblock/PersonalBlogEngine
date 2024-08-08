@@ -412,7 +412,8 @@
                     </div>
                 </div>
             </div>
-            <svelte:component this={c.default} bind:value={post.content} />
+            <textarea class="w-full h-full resize-none" bind:value={post.content} ></textarea>
+            <!-- <svelte:component this={c.default} bind:value={post.content} /> -->
             <div class="flex justify-center">
                 <button
                     class="rounded-lg p-1 bg-red-600 text-white transition hover:bg-red-700 mt-8"
